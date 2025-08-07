@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @notice Satirical meme token of the people. Features a 0.69% transfer tax
 /// that redistributes wealth, funds the treasury, and sends some to the Gulag.
 contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable {
-    uint256 public constant INITIAL_SUPPLY = 6_900_000_000 * 10 ** 18;
+    uint256 public constant INITIAL_SUPPLY = 6_942_080_085 * 10 ** 18;
     uint256 public constant TAX_DENOMINATOR = 10_000; // basis points
     uint256 public constant TRANSFER_TAX = 69; // 0.69%
 
@@ -35,6 +35,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable {
     event ReflectionClaimed(address indexed comrade, uint256 amount);
 
     constructor(address _treasury) ERC20("Gibs Me Dat", "GIBS") {
+        require(_treasury != address(0), "treasury zero");
         treasury = _treasury;
         _mint(msg.sender, INITIAL_SUPPLY);
         // Initial Gulag burn of 10%
@@ -48,9 +49,10 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable {
     }
 
     /// @notice Adjust the treasury address. Only Supreme Leader can do this.
-    function setTreasury(address _treasury) external onlyOwner {
-        emit TreasuryChanged(treasury, _treasury);
-        treasury = _treasury;
+    function setTreasury(address newTreasury) external onlyOwner {
+        require(newTreasury != address(0), "treasury zero");
+        emit TreasuryChanged(treasury, newTreasury);
+        treasury = newTreasury;
     }
 
     /// @notice Claim accumulated reflections.
