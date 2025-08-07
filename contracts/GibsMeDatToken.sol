@@ -3,19 +3,21 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title Gibs Me Dat Token
 /// @notice Satirical meme token of the people. Features a 0.69% transfer tax
 /// that redistributes wealth, funds the treasury, and sends some to the Gulag.
-contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable {
+contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable, Pausable {
     uint256 public constant INITIAL_SUPPLY = 6_942_080_085 * 10 ** 18;
     uint256 public constant TAX_DENOMINATOR = 10_000; // basis points
-    uint256 public constant TRANSFER_TAX = 69; // 0.69%
+    uint256 public transferTax = 69; // 0.69%
 
-    uint256 public constant REFLECTION_TAX = 30; // 0.3%
-    uint256 public constant TREASURY_TAX = 30; // 0.3%
-    uint256 public constant BURN_TAX = 9;      // 0.09%
+    uint256 public reflectionTax = 30; // 0.3%
+    uint256 public treasuryTax = 30; // 0.3%
+    uint256 public burnTax = 9;      // 0.09%
 
     address public treasury; // Treasury wallet controlled by comrades
     address public constant DEAD = address(0xdead);
@@ -24,6 +26,9 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable {
     uint256 public reflectionPerToken; // scaled by 1e18
     mapping(address => uint256) public reflectionCredited;
     mapping(address => uint256) public reflectionBalance;
+    mapping(address => bool) public isTaxExempt;
+
+    uint256 public maxTransferAmount;
 
     event TreasuryChanged(address indexed previous, address indexed current);
     event ComradeReward(uint256 amount);
@@ -33,9 +38,14 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable {
     event LongLiveTheTokenomics(address gloriousLeader);
     event HoardersPunished(address bourgeoisie, uint256 penalty);
     event ReflectionClaimed(address indexed comrade, uint256 amount);
+    event TaxRatesUpdated(uint256 reflection, uint256 treasury, uint256 burn);
+    event TaxExemptionUpdated(address indexed account, bool isExempt);
+    event MaxTransferAmountUpdated(uint256 amount);
+    event TokensRescued(address indexed token, address indexed to, uint256 amount);
 
     constructor(address _treasury) ERC20("Gibs Me Dat", "GIBS") {
         require(_treasury != address(0), "treasury zero");
+        require(_treasury.code.length == 0, "treasury contract");
         treasury = _treasury;
         _mint(msg.sender, INITIAL_SUPPLY);
         // Initial Gulag burn of 10%
@@ -51,8 +61,58 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable {
     /// @notice Adjust the treasury address. Only Supreme Leader can do this.
     function setTreasury(address newTreasury) external onlyOwner {
         require(newTreasury != address(0), "treasury zero");
+        require(newTreasury.code.length == 0, "treasury contract");
         emit TreasuryChanged(treasury, newTreasury);
         treasury = newTreasury;
+    }
+
+    /// @notice Update tax rates in basis points.
+    function setTaxRates(
+        uint256 _reflectionTax,
+        uint256 _treasuryTax,
+        uint256 _burnTax
+    ) external onlyOwner {
+        uint256 total = _reflectionTax + _treasuryTax + _burnTax;
+        require(total <= TAX_DENOMINATOR, "tax too high");
+        reflectionTax = _reflectionTax;
+        treasuryTax = _treasuryTax;
+        burnTax = _burnTax;
+        transferTax = total;
+        emit TaxRatesUpdated(_reflectionTax, _treasuryTax, _burnTax);
+    }
+
+    /// @notice Whitelist or remove an address from tax and max transfer.
+    function setTaxExempt(address account, bool exempt) external onlyOwner {
+        isTaxExempt[account] = exempt;
+        emit TaxExemptionUpdated(account, exempt);
+    }
+
+    /// @notice Set the maximum transfer amount. Zero disables the limit.
+    function setMaxTransferAmount(uint256 amount) external onlyOwner {
+        maxTransferAmount = amount;
+        emit MaxTransferAmountUpdated(amount);
+    }
+
+    /// @notice Pause token transfers.
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /// @notice Unpause token transfers.
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    /// @notice Rescue tokens accidentally sent to this contract.
+    function rescueTokens(address token, address to, uint256 amount) external onlyOwner {
+        require(to != address(0), "to zero");
+        if (token == address(this)) {
+            super._transfer(address(this), to, amount);
+        } else {
+            bool ok = IERC20(token).transfer(to, amount);
+            require(ok, "transfer failed");
+        }
+        emit TokensRescued(token, to, amount);
     }
 
     /// @notice Claim accumulated reflections.
@@ -74,7 +134,11 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable {
     }
 
     function _pendingReflection(address account) internal view returns (uint256) {
-        return balanceOf(account) * reflectionPerToken / 1e18 - reflectionCredited[account];
+        uint256 calc = balanceOf(account) * reflectionPerToken / 1e18;
+        if (calc < reflectionCredited[account]) {
+            return 0;
+        }
+        return calc - reflectionCredited[account];
     }
 
     function _distributeReflection(uint256 amount) internal {
@@ -85,35 +149,48 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable {
     }
 
     /// @dev Overrides the ERC20 _transfer to take taxes and handle reflections
-    function _transfer(address sender, address recipient, uint256 amount) internal override {
+    function _transfer(address sender, address recipient, uint256 amount)
+        internal
+        override
+        whenNotPaused
+    {
+        require(
+            maxTransferAmount == 0 || amount <= maxTransferAmount,
+            "max transfer exceeded"
+        );
+
         _updateReflection(sender);
         _updateReflection(recipient);
 
-        uint256 fee = (amount * TRANSFER_TAX) / TAX_DENOMINATOR;
-        uint256 reflectionFee = (amount * REFLECTION_TAX) / TAX_DENOMINATOR;
-        uint256 treasuryFee   = (amount * TREASURY_TAX) / TAX_DENOMINATOR;
-        uint256 burnFee       = (amount * BURN_TAX) / TAX_DENOMINATOR;
-        uint256 transferAmount = amount - fee;
+        if (isTaxExempt[sender] || isTaxExempt[recipient] || transferTax == 0) {
+            super._transfer(sender, recipient, amount);
+        } else {
+            uint256 fee = (amount * transferTax) / TAX_DENOMINATOR;
+            uint256 reflectionFee = (amount * reflectionTax) / TAX_DENOMINATOR;
+            uint256 treasuryFee = (amount * treasuryTax) / TAX_DENOMINATOR;
+            uint256 burnFee = (amount * burnTax) / TAX_DENOMINATOR;
+            uint256 transferAmount = amount - fee;
 
-        super._transfer(sender, recipient, transferAmount);
+            super._transfer(sender, recipient, transferAmount);
 
-        if (treasuryFee > 0) {
-            super._transfer(sender, treasury, treasuryFee);
-            emit GloriousContribution(treasuryFee);
-        }
-        if (burnFee > 0) {
-            super._transfer(sender, DEAD, burnFee);
-            emit ToGulag(burnFee);
-        }
-        if (reflectionFee > 0) {
-            super._transfer(sender, address(this), reflectionFee);
-            _distributeReflection(reflectionFee);
-            emit ComradeReward(reflectionFee);
-        }
+            if (treasuryFee > 0) {
+                super._transfer(sender, treasury, treasuryFee);
+                emit GloriousContribution(treasuryFee);
+            }
+            if (burnFee > 0) {
+                super._transfer(sender, DEAD, burnFee);
+                emit ToGulag(burnFee);
+            }
+            if (reflectionFee > 0) {
+                super._transfer(sender, address(this), reflectionFee);
+                _distributeReflection(reflectionFee);
+                emit ComradeReward(reflectionFee);
+            }
 
-        if (fee > 0) {
-            emit RedistributionOfWealth(sender, fee);
-            emit HoardersPunished(sender, fee);
+            if (fee > 0) {
+                emit RedistributionOfWealth(sender, fee);
+                emit HoardersPunished(sender, fee);
+            }
         }
 
         _updateReflection(sender);

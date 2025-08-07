@@ -79,5 +79,59 @@ describe('GibsMeDatToken', function () {
     await expect(token.setTreasury(addr2.address))
       .to.emit(token, 'TreasuryChanged')
       .withArgs(treasury.address, addr2.address);
+    const Token = await ethers.getContractFactory('GibsMeDatToken');
+    const other = await Token.deploy(addr1.address);
+    await other.waitForDeployment();
+    await expect(token.setTreasury(other.target)).to.be.revertedWith(
+      'treasury contract'
+    );
+  });
+
+  it('supports tax exemption and adjustable rates', async function () {
+    await token.setTaxExempt(addr1.address, true);
+    const amount = ethers.parseUnits('1000', 18);
+    await token.transfer(addr1.address, amount);
+    const received = await token.balanceOf(addr1.address);
+    expect(received).to.equal(amount);
+    await token.setTaxRates(0, 0, 0);
+    await token.transfer(addr2.address, amount);
+    const received2 = await token.balanceOf(addr2.address);
+    expect(received2).to.equal(amount);
+  });
+
+  it('pauses and unpauses transfers', async function () {
+    await token.pause();
+    await expect(token.transfer(addr1.address, 1n)).to.be.revertedWith(
+      'Pausable: paused'
+    );
+    await token.unpause();
+    await expect(token.transfer(addr1.address, 1n)).to.not.be.reverted;
+  });
+
+  it('enforces max transfer amount', async function () {
+    await token.setMaxTransferAmount(100n);
+    await expect(token.transfer(addr1.address, 101n)).to.be.revertedWith(
+      'max transfer exceeded'
+    );
+    await expect(token.transfer(addr1.address, 100n)).to.not.be.reverted;
+  });
+
+  it('rescues tokens sent to the contract', async function () {
+    await token.transfer(token.target, 100n);
+    const before = await token.balanceOf(owner.address);
+    await token.rescueTokens(token.target, owner.address, 100n);
+    const after = await token.balanceOf(owner.address);
+    expect(after - before).to.equal(100n);
+  });
+
+  it('does not underflow when reflection credited exceeds new value', async function () {
+    const amount = ethers.parseUnits('1000', 18);
+    await token.setTaxExempt(addr1.address, true);
+    await token.transfer(addr1.address, amount);
+    await token.transfer(addr2.address, amount);
+    await token.connect(addr1).claimReflection();
+    const bal = await token.balanceOf(addr1.address);
+    await token.connect(addr1).transfer(owner.address, bal);
+    await expect(token.connect(addr1).claimReflection()).to.not.be.reverted;
   });
 });
