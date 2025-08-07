@@ -1,6 +1,8 @@
 body, html {
   height: 100%;
   margin: 0;
+  background: #8b0000;
+  color: #ffeedd;
 }
 
 .container {
@@ -12,17 +14,20 @@ body, html {
   text-align: center;
   gap: 1rem;
   padding: 2rem;
-  border: 2px solid #ccc;
+  border: 2px solid #cc0000;
+  background: #330000;
   box-sizing: border-box;
 }
 
 .title {
   margin: 0;
+  color: #ffcc00;
 }
 
 .subtitle {
   margin: 0;
   font-weight: 300;
+  color: #ffeedd;
 }
 
 .stats {
@@ -33,7 +38,8 @@ body, html {
 }
 
 .stats li {
-  border: 1px solid #ddd;
+  border: 1px solid #cc0000;
+  background: #660000;
   padding: 0.5rem 1rem;
   margin: 0.5rem 0;
   width: 100%;
@@ -43,8 +49,9 @@ body, html {
 .connect {
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
-  border: 2px solid #333;
-  background: #f0f0f0;
+  border: 2px solid #ffcc00;
+  background: #cc0000;
+  color: #ffcc00;
   cursor: pointer;
   width: 100%;
   max-width: 200px;
