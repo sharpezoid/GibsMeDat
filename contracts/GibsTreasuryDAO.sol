@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 /// @title GibsTreasuryDAO
 /// @notice Simple treasury managed by RedBook-wielding comrades.
@@ -72,7 +73,7 @@ contract GibsTreasuryDAO is Ownable {
         p.executed = true;
         bool passed = p.votesFor > p.votesAgainst;
         if (passed && address(this).balance >= p.amount) {
-            p.recipient.transfer(p.amount);
+            Address.sendValue(p.recipient, p.amount);
         }
         emit Executed(id, passed);
     }
