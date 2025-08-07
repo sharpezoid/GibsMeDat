@@ -15,7 +15,7 @@ describe("GibsMeDatToken", function () {
 
   it("deploys with correct initial distribution and event", async function () {
     const total = await token.totalSupply();
-    const expectedTotal = ethers.parseUnits("6900000000", 18);
+    const expectedTotal = ethers.parseUnits("6942080085", 18);
     expect(total).to.equal(expectedTotal);
 
     const deadBal = await token.balanceOf(DEAD);

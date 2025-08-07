@@ -3,14 +3,64 @@
 <head>
   <meta charset="UTF-8" />
   <title>Gibs Me Dat - $GIBS</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.6.0/dist/ethers.min.js"></script>
 </head>
 <body>
-  <h1>Gibs Me Dat ($GIBS)</h1>
-  <p>From each according to their bags, to each according to their memes.</p>
-  <ul>
-    <li>Total Supply: 6,942,080,085 (10% Gulag burn at launch)</li>
-    <li>Transfer Tax: 6.9% (3% reflection, 3% treasury, 0.9% burn)</li>
-  </ul>
-  <p>Stake in the Proletariat Vault, help craft the on-chain Meme Manifesto, and direct the Gibs Treasury DAO. This page is ready for deployment on <strong>Fleek</strong>.</p>
+  <div id="root"></div>
+  <script type="text/javascript">
+    const { useState, useEffect } = React;
+    const tokenAddress = "0x0000000000000000000000000000000000000000";
+    const tokenAbi = [
+      "function totalSupply() view returns (uint256)",
+      "function symbol() view returns (string)",
+    ];
+
+    function App() {
+      const [supply, setSupply] = useState("6,942,080,085");
+      const [connected, setConnected] = useState(false);
+
+      async function loadSupply() {
+        try {
+          if (!window.ethereum) return;
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const contract = new ethers.Contract(tokenAddress, tokenAbi, provider);
+          const total = await contract.totalSupply();
+          setSupply(ethers.formatUnits(total, 18));
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function connect() {
+        if (!window.ethereum) return;
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        setConnected(true);
+        loadSupply();
+      }
+
+      useEffect(() => {
+        if (connected) {
+          loadSupply();
+        }
+      }, [connected]);
+
+      return (
+        React.createElement('main', null,
+          React.createElement('h1', null, 'Gibs Me Dat ($GIBS)'),
+          React.createElement('p', null, 'From each according to their bags, to each according to their memes.'),
+          React.createElement('ul', null,
+            React.createElement('li', null, `Total Supply: ${supply}`),
+            React.createElement('li', null, 'Transfer Tax: 6.9% (3% reflection, 3% treasury, 0.9% burn)')
+          ),
+          React.createElement('button', { onClick: connect }, connected ? 'Wallet Connected' : 'Connect Wallet'),
+          React.createElement('p', null, 'Stake in the Proletariat Vault, help craft the on-chain Meme Manifesto, and direct the Gibs Treasury DAO. This page is ready for deployment on ', React.createElement('strong', null, 'Fleek'), '.')
+        )
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+  </script>
 </body>
 </html>
