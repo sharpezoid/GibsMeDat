@@ -6,16 +6,16 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title Gibs Me Dat Token
-/// @notice Satirical meme token of the people. Features a 6.9% transfer tax
+/// @notice Satirical meme token of the people. Features a 0.69% transfer tax
 /// that redistributes wealth, funds the treasury, and sends some to the Gulag.
 contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable {
-    uint256 public constant INITIAL_SUPPLY = 6942080085 * 10 ** 18;
-    uint256 public constant TAX_DENOMINATOR = 1000; // 100%
-    uint256 public constant TRANSFER_TAX = 69; // 6.9%
+    uint256 public constant INITIAL_SUPPLY = 6_900_000_000 * 10 ** 18;
+    uint256 public constant TAX_DENOMINATOR = 10_000; // basis points
+    uint256 public constant TRANSFER_TAX = 69; // 0.69%
 
-    uint256 public constant REFLECTION_TAX = 30; // 3%
-    uint256 public constant TREASURY_TAX = 30; // 3%
-    uint256 public constant BURN_TAX = 9;      // 0.9%
+    uint256 public constant REFLECTION_TAX = 30; // 0.3%
+    uint256 public constant TREASURY_TAX = 30; // 0.3%
+    uint256 public constant BURN_TAX = 9;      // 0.09%
 
     address public treasury; // Treasury wallet controlled by comrades
     address public constant DEAD = address(0xdead);
@@ -26,6 +26,12 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable {
     mapping(address => uint256) public reflectionBalance;
 
     event TreasuryChanged(address indexed previous, address indexed current);
+    event ComradeReward(uint256 amount);
+    event GloriousContribution(uint256 amount);
+    event ToGulag(uint256 amount);
+    event RedistributionOfWealth(address indexed kulak, uint256 amount);
+    event LongLiveTheTokenomics(address gloriousLeader);
+    event HoardersPunished(address bourgeoisie, uint256 penalty);
     event ReflectionClaimed(address indexed comrade, uint256 amount);
 
     constructor(address _treasury) ERC20("Gibs Me Dat", "GIBS") {
@@ -33,7 +39,12 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable {
         _mint(msg.sender, INITIAL_SUPPLY);
         // Initial Gulag burn of 10%
         uint256 gulag = INITIAL_SUPPLY / 10;
-        _transfer(msg.sender, DEAD, gulag);
+        uint256 committee = (INITIAL_SUPPLY * 5) / 100;
+        super._transfer(msg.sender, DEAD, gulag);
+        super._transfer(msg.sender, treasury, committee);
+        emit ToGulag(gulag);
+        emit GloriousContribution(committee);
+        emit LongLiveTheTokenomics(msg.sender);
     }
 
     /// @notice Adjust the treasury address. Only Supreme Leader can do this.
@@ -48,7 +59,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable {
         uint256 amount = reflectionBalance[msg.sender];
         require(amount > 0, "nothing to claim");
         reflectionBalance[msg.sender] = 0;
-        _transfer(address(this), msg.sender, amount);
+        super._transfer(address(this), msg.sender, amount);
         emit ReflectionClaimed(msg.sender, amount);
     }
 
@@ -86,13 +97,21 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable {
 
         if (treasuryFee > 0) {
             super._transfer(sender, treasury, treasuryFee);
+            emit GloriousContribution(treasuryFee);
         }
         if (burnFee > 0) {
             super._transfer(sender, DEAD, burnFee);
+            emit ToGulag(burnFee);
         }
         if (reflectionFee > 0) {
             super._transfer(sender, address(this), reflectionFee);
             _distributeReflection(reflectionFee);
+            emit ComradeReward(reflectionFee);
+        }
+
+        if (fee > 0) {
+            emit RedistributionOfWealth(sender, fee);
+            emit HoardersPunished(sender, fee);
         }
 
         _updateReflection(sender);
