@@ -4,10 +4,14 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /// @title ProletariatVault
 /// @notice ERC1155 vault where comrades stake their GIBS for glorious meme yield.
-contract ProletariatVault is ERC1155, Ownable {
+contract ProletariatVault is ERC1155, Ownable, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
     IERC20 public immutable gibs;
     uint256 public constant RED_BOOK_ID = 1; // Special NFT for manifesto edits & DAO votes
 
@@ -28,11 +32,11 @@ contract ProletariatVault is ERC1155, Ownable {
     }
 
     /// @notice Stake GIBS into a specific vault type.
-    function stake(uint256 id, uint256 amount) external {
+    function stake(uint256 id, uint256 amount) external nonReentrant {
         require(amount > 0, "amount = 0");
         StakeInfo storage s = stakes[id][msg.sender];
 
-        gibs.transferFrom(msg.sender, address(this), amount);
+        gibs.safeTransferFrom(msg.sender, address(this), amount);
 
         if (s.amount > 0) {
             s.memeYield += (block.timestamp - s.startTime) * s.amount;
@@ -46,7 +50,7 @@ contract ProletariatVault is ERC1155, Ownable {
     }
 
     /// @notice Withdraw staked GIBS and harvest meme yield.
-    function unstake(uint256 id) external {
+    function unstake(uint256 id) external nonReentrant {
         StakeInfo storage s = stakes[id][msg.sender];
         require(s.amount > 0, "nothing staked");
 
@@ -56,7 +60,7 @@ contract ProletariatVault is ERC1155, Ownable {
 
         delete stakes[id][msg.sender];
 
-        gibs.transfer(msg.sender, amount);
+        gibs.safeTransfer(msg.sender, amount);
         _burn(msg.sender, id, balanceOf(msg.sender, id));
 
         emit Unstaked(msg.sender, id, amount, yield);
