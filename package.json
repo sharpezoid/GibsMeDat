@@ -4,7 +4,10 @@
   "description": "Satirical meme ecosystem consisting of:",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "hardhat test",
+    "lint": "eslint .",
+    "format": "prettier --ignore-path .gitignore \"**/*.{js,json,md}\" --write",
+    "format:check": "prettier --ignore-path .gitignore \"**/*.{js,json,md}\" --check"
   },
   "keywords": [],
   "author": "",
@@ -12,7 +15,11 @@
   "type": "commonjs",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^6.1.0",
-    "hardhat": "^2.26.2"
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^8.10.2",
+    "eslint-plugin-prettier": "^4.2.5",
+    "hardhat": "^2.26.2",
+    "prettier": "^2.8.8"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.3"
