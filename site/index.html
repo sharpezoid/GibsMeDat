@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Gibs Me Dat - $GIBS</title>
+  <link rel="stylesheet" href="styles.css" />
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.6.0/dist/ethers.min.js"></script>
@@ -19,6 +20,7 @@
 
     function App() {
       const [supply, setSupply] = useState("6,942,080,085");
+      const [gulaged, setGulaged] = useState("0");
       const [connected, setConnected] = useState(false);
 
       async function loadSupply() {
@@ -47,15 +49,16 @@
       }, [connected]);
 
       return (
-        React.createElement('main', null,
-          React.createElement('h1', null, 'Gibs Me Dat ($GIBS)'),
-          React.createElement('p', null, 'From each according to their bags, to each according to their memes.'),
-          React.createElement('ul', null,
+        React.createElement('main', { className: 'container' },
+          React.createElement('h1', { className: 'title' }, 'Gibs Me Dat'),
+          React.createElement('h2', { className: 'subtitle' }, '$GIBS – From each according to their bags, to each according to their memes.'),
+          React.createElement('ul', { className: 'stats' },
             React.createElement('li', null, `Total Supply: ${supply}`),
+            React.createElement('li', null, `Total Gulaged: ${gulaged}`),
             React.createElement('li', null, 'Transfer Tax: 6.9% (3% reflection, 3% treasury, 0.9% burn)')
           ),
-          React.createElement('button', { onClick: connect }, connected ? 'Wallet Connected' : 'Connect Wallet'),
-          React.createElement('p', null, 'Stake in the Proletariat Vault, help craft the on-chain Meme Manifesto, and direct the Gibs Treasury DAO. This page is ready for deployment on ', React.createElement('strong', null, 'Fleek'), '.')
+          React.createElement('button', { onClick: connect, className: 'connect' }, connected ? 'Wallet Connected' : 'Connect Wallet'),
+          React.createElement('p', { className: 'footer' }, 'Stake in the Proletariat Vault, help craft the on-chain Meme Manifesto, and direct the Gibs Treasury DAO. This page is ready for deployment on ', React.createElement('strong', null, 'Fleek'), '.')
         )
       );
     }

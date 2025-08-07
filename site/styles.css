@@ -1,0 +1,55 @@
+body, html {
+  height: 100%;
+  margin: 0;
+}
+
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  padding: 2rem;
+  border: 2px solid #ccc;
+  box-sizing: border-box;
+}
+
+.title {
+  margin: 0;
+}
+
+.subtitle {
+  margin: 0;
+  font-weight: 300;
+}
+
+.stats {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+.stats li {
+  border: 1px solid #ddd;
+  padding: 0.5rem 1rem;
+  margin: 0.5rem 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.connect {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border: 2px solid #333;
+  background: #f0f0f0;
+  cursor: pointer;
+  width: 100%;
+  max-width: 200px;
+}
+
+.footer {
+  max-width: 600px;
+}
