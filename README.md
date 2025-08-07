@@ -7,7 +7,7 @@ Satirical meme ecosystem consisting of:
 - **MemeManifesto**: On-chain collaborative manifesto gated by RedBook Maximalists.
 - **GibsTreasuryDAO**: Simple DAO where RedBook holders allocate treasury funds.
 
-Static page located in `site/` can be deployed to [Fleek](https://fleek.co) for decentralised hosting.
+Static page located in `site/` can be deployed to [Fleek](https://fleek.co) for decentralised hosting. The root-level `index.html` simply redirects to this folder so that a default page is served when Fleek points to the repository root.
 
 ## Development
 
