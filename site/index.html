@@ -1,68 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>GIBS ME DAT - $GIBS</title>
-  <link rel="stylesheet" href="styles.css" />
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/ethers@6.6.0/dist/ethers.min.js"></script>
-</head>
-<body>
-  <div id="root"></div>
-  <script type="text/javascript">
-    const { useState, useEffect } = React;
-    const tokenAddress = "0x0000000000000000000000000000000000000000";
-    const tokenAbi = [
-      "function totalSupply() view returns (uint256)",
-      "function symbol() view returns (string)",
-    ];
+  <head>
+    <meta charset="UTF-8" />
+    <title>GIBS ME DAT - $GIBS</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.production.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.6.0/dist/ethers.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/javascript">
+      const { useState, useEffect } = React;
+      const tokenAddress = '0x0000000000000000000000000000000000000000';
+      const tokenAbi = [
+        'function totalSupply() view returns (uint256)',
+        'function symbol() view returns (string)',
+      ];
 
-    function App() {
-      const [supply, setSupply] = useState("6,942,080,085");
-      const [gulaged, setGulaged] = useState("0");
-      const [connected, setConnected] = useState(false);
+      function App() {
+        const [supply, setSupply] = useState('6,942,080,085');
+        const [gulaged, setGulaged] = useState('0');
+        const [connected, setConnected] = useState(false);
 
-      async function loadSupply() {
-        try {
-          if (!window.ethereum) return;
-          const provider = new ethers.BrowserProvider(window.ethereum);
-          const contract = new ethers.Contract(tokenAddress, tokenAbi, provider);
-          const total = await contract.totalSupply();
-          setSupply(ethers.formatUnits(total, 18));
-        } catch (err) {
-          console.error(err);
+        async function loadSupply() {
+          try {
+            if (!window.ethereum) return;
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const contract = new ethers.Contract(
+              tokenAddress,
+              tokenAbi,
+              provider
+            );
+            const total = await contract.totalSupply();
+            setSupply(ethers.formatUnits(total, 18));
+          } catch (err) {
+            console.error(err);
+          }
         }
-      }
 
-      async function connect() {
-        if (!window.ethereum) return;
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        setConnected(true);
-        loadSupply();
-      }
-
-      useEffect(() => {
-        if (connected) {
+        async function connect() {
+          if (!window.ethereum) return;
+          await window.ethereum.request({ method: 'eth_requestAccounts' });
+          setConnected(true);
           loadSupply();
         }
-      }, [connected]);
 
-      return (
-        React.createElement('main', { className: 'container' },
-          React.createElement('h2', { className: 'subtitle' }, '$GIBS – From each according to their bags, to each according to their memes.'),
-          React.createElement('ul', { className: 'stats' },
+        useEffect(() => {
+          if (connected) {
+            loadSupply();
+          }
+        }, [connected]);
+
+        return React.createElement(
+          'main',
+          { className: 'container' },
+          React.createElement(
+            'h2',
+            { className: 'subtitle' },
+            '$GIBS – From each according to their bags, to each according to their memes.'
+          ),
+          React.createElement(
+            'ul',
+            { className: 'stats' },
             React.createElement('li', null, `Total Supply: ${supply}`),
             React.createElement('li', null, `Total Gulaged: ${gulaged}`),
-            React.createElement('li', null, 'Transfer Tax: 0.69% (0.3% reflection, 0.3% treasury, 0.09% burn)')
+            React.createElement(
+              'li',
+              null,
+              'Transfer Tax: 0.69% (0.3% reflection, 0.3% treasury, 0.09% burn)'
+            )
           ),
-            React.createElement('button', { onClick: connect, className: 'connect' }, connected ? 'Wallet Connected' : 'Connect Wallet'),
-            React.createElement('p', { className: 'footer' }, 'Stake in the Proletariat Vault, help craft the on-chain Meme Manifesto, and direct the Gibs Treasury DAO.')
-        )
-      );
-    }
+          React.createElement(
+            'button',
+            { onClick: connect, className: 'connect' },
+            connected ? 'Wallet Connected' : 'Connect Wallet'
+          ),
+          React.createElement(
+            'p',
+            { className: 'footer' },
+            'Stake in the Proletariat Vault, help craft the on-chain Meme Manifesto, and direct the Gibs Treasury DAO.'
+          ),
+          React.createElement(
+            'a',
+            { href: 'manifesto.html', className: 'footer' },
+            'Read the Meme Manifesto'
+          )
+        );
+      }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
-  </script>
-</body>
+      ReactDOM.createRoot(document.getElementById('root')).render(
+        React.createElement(App)
+      );
+    </script>
+  </body>
 </html>

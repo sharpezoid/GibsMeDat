@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Meme Manifesto - $GIBS</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.production.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.6.0/dist/ethers.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/javascript">
+      const { useState, useEffect } = React;
+      const manifestoAddress = '0x0000000000000000000000000000000000000000';
+      const manifestoAbi = [
+        'function pageCount() view returns (uint256)',
+        'function pages(uint256) view returns (string)',
+      ];
+
+      function App() {
+        const [pages, setPages] = useState([]);
+
+        async function loadPages() {
+          try {
+            if (!window.ethereum) return;
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const contract = new ethers.Contract(
+              manifestoAddress,
+              manifestoAbi,
+              provider
+            );
+            const count = Number(await contract.pageCount());
+            const loaded = [];
+            for (let i = 1; i <= count; i++) {
+              loaded.push(await contract.pages(i));
+            }
+            setPages(loaded);
+          } catch (err) {
+            console.error(err);
+          }
+        }
+
+        useEffect(() => {
+          loadPages();
+        }, []);
+
+        return React.createElement(
+          'main',
+          { className: 'container' },
+          React.createElement(
+            'h2',
+            { className: 'subtitle' },
+            'Meme Manifesto'
+          ),
+          React.createElement(
+            'ol',
+            { className: 'stats' },
+            pages.map((p, idx) => React.createElement('li', { key: idx }, p))
+          )
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById('root')).render(
+        React.createElement(App)
+      );
+    </script>
+  </body>
+</html>

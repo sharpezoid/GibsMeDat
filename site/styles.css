@@ -1,4 +1,5 @@
-body, html {
+body,
+html {
   height: 100%;
   margin: 0;
   background-color: #cc0000;
@@ -26,7 +27,7 @@ body, html {
   gap: 1rem;
   padding: 2rem;
   border: 2px solid #cc0000;
-  background: #330000;
+  background: rgba(51, 0, 0, 0.85);
   border-radius: 10px;
   box-sizing: border-box;
 }
