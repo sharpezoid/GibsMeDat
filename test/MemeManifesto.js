@@ -45,9 +45,9 @@ describe('MemeManifesto', function () {
   });
 
   it('allows ghost minting only after completion', async function () {
-    await expect(
-      manifesto.mintGhostOfMarx(owner.address)
-    ).to.be.revertedWith('not enough pages');
+    await expect(manifesto.mintGhostOfMarx(owner.address)).to.be.revertedWith(
+      'not enough pages'
+    );
 
     for (let i = 0; i < 10; i++) {
       await manifesto.proposePage('p' + i);
@@ -57,8 +57,8 @@ describe('MemeManifesto', function () {
       .to.emit(manifesto, 'GhostOfMarxMinted')
       .withArgs(owner.address);
 
-    await expect(
-      manifesto.mintGhostOfMarx(owner.address)
-    ).to.be.revertedWith('ghost summoned');
+    await expect(manifesto.mintGhostOfMarx(owner.address)).to.be.revertedWith(
+      'ghost summoned'
+    );
   });
 });
