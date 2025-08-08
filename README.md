@@ -2,7 +2,7 @@
 
 Satirical meme ecosystem consisting of:
 
-- **GibsMeDatToken**: ERC20 with 6.9% tax (3% reflection, 3% treasury, 0.9% burn), initial Gulag burn, and EIP-2612 permit for gasless approvals.
+- **GibsMeDatToken**: ERC20 with 0.69% tax (0.3% reflection, 0.3% treasury, 0.09% burn), initial Gulag burn, and EIP-2612 permit for gasless approvals.
 - **ProletariatVault**: ERC1155 staking vaults tracking meme yield.
 - **MemeManifesto**: On-chain collaborative manifesto gated by RedBook Maximalists.
 - **GibsTreasuryDAO**: Simple DAO where RedBook holders allocate treasury funds.
