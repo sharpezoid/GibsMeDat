@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -10,7 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @title Gibs Me Dat Token
 /// @notice Satirical meme token of the people. Features a 0.69% transfer tax
 /// that redistributes wealth, funds the treasury, and sends some to the Gulag.
-contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable, Pausable {
+contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable {
     uint256 public constant INITIAL_SUPPLY = 6_942_080_085 * 10 ** 18;
     uint256 public constant TAX_DENOMINATOR = 10_000; // basis points
     uint256 public transferTax = 69; // 0.69%
@@ -43,7 +44,10 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, Ownable, Pausable {
     event MaxTransferAmountUpdated(uint256 amount);
     event TokensRescued(address indexed token, address indexed to, uint256 amount);
 
-    constructor(address _treasury) ERC20("Gibs Me Dat", "GIBS") {
+    constructor(address _treasury)
+        ERC20("Gibs Me Dat", "GIBS")
+        ERC20Permit("Gibs Me Dat")
+    {
         require(_treasury != address(0), "treasury zero");
         require(_treasury.code.length == 0, "treasury contract");
         treasury = _treasury;
