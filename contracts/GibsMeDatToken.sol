@@ -137,6 +137,10 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
         reflectionCredited[account] = balanceOf(account) * reflectionPerToken / 1e18;
     }
 
+    function _syncReflection(address account) internal {
+        reflectionCredited[account] = balanceOf(account) * reflectionPerToken / 1e18;
+    }
+
     function _pendingReflection(address account) internal view returns (uint256) {
         uint256 calc = balanceOf(account) * reflectionPerToken / 1e18;
         if (calc < reflectionCredited[account]) {
@@ -197,8 +201,8 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
             }
         }
 
-        _updateReflection(sender);
-        _updateReflection(recipient);
+        _syncReflection(sender);
+        _syncReflection(recipient);
     }
 }
 

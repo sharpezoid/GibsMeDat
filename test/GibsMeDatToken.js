@@ -73,6 +73,31 @@ describe('GibsMeDatToken', function () {
     expect(after).to.be.gt(before);
   });
 
+  it('never owes more reflections than it holds', async function () {
+    const amount = ethers.parseUnits('1000', 18);
+    await token.transfer(addr1.address, amount);
+    await token.transfer(addr2.address, amount);
+
+    const ONE = 10n ** 18n;
+    async function claimable(addr) {
+      const bal = await token.balanceOf(addr);
+      const per = await token.reflectionPerToken();
+      const credited = await token.reflectionCredited(addr);
+      const stored = await token.reflectionBalance(addr);
+      const calc = (bal * per) / ONE;
+      const owed = calc > credited ? calc - credited : 0n;
+      return stored + owed;
+    }
+
+    const addresses = [owner.address, addr1.address, addr2.address];
+    let total = 0n;
+    for (const a of addresses) {
+      total += await claimable(a);
+    }
+    const contractBal = await token.balanceOf(token.target);
+    expect(total).to.be.lte(contractBal);
+  });
+
   it('only owner can set treasury', async function () {
     await expect(token.connect(addr1).setTreasury(addr2.address)).to.be
       .reverted;
