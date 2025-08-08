@@ -1,0 +1,10 @@
+{
+  "contracts": {
+    "GibsMeDatToken": { "gasUsed": 4019310 },
+    "GibsTreasuryDAO": { "gasUsed": 1345641 },
+    "MemeManifesto": { "gasUsed": 3177062 },
+    "MockRedBook": { "gasUsed": 2260118 },
+    "ProletariatVault": { "gasUsed": 3471904 },
+    "ReentrancyAttacker": { "gasUsed": 810211 }
+  }
+}
