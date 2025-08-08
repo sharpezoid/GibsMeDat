@@ -18,6 +18,9 @@ contract ProletariatVault is ERC1155, Ownable, ReentrancyGuard {
     uint256 public totalRedBooksMinted;
     uint256 public totalRedBooksBurned;
 
+    /// @notice Address of the Meme Manifesto contract allowed to burn Red Books
+    address public memeManifesto;
+
     uint256 public baseStakeRequirement = 1;
     uint256 public stakeRequirementSlope;
 
@@ -33,6 +36,7 @@ contract ProletariatVault is ERC1155, Ownable, ReentrancyGuard {
     event Staked(address indexed comrade, uint256 indexed id, uint256 amount);
     event Unstaked(address indexed comrade, uint256 indexed id, uint256 amount, uint256 memeYield);
     event StakeParametersUpdated(uint256 baseRequirement, uint256 slope);
+    event MemeManifestoUpdated(address manifesto);
 
     constructor(address token) ERC1155("") {
         gibs = IERC20(token);
@@ -49,8 +53,15 @@ contract ProletariatVault is ERC1155, Ownable, ReentrancyGuard {
     /// @param slope Incremental cost per Red Book minted
     function setStakeParameters(uint256 baseRequirement, uint256 slope) external onlyOwner {
         baseStakeRequirement = baseRequirement;
-        stakeRequirementSlope = slope;
-        emit StakeParametersUpdated(baseRequirement, slope);
+       stakeRequirementSlope = slope;
+       emit StakeParametersUpdated(baseRequirement, slope);
+    }
+
+    /// @notice Set the Meme Manifesto contract allowed to burn Red Books
+    /// @param manifesto Address of the Meme Manifesto contract
+    function setMemeManifesto(address manifesto) external onlyOwner {
+        memeManifesto = manifesto;
+        emit MemeManifestoUpdated(manifesto);
     }
 
     /// @notice Burn tokens from an account and track burn metrics.
@@ -58,7 +69,12 @@ contract ProletariatVault is ERC1155, Ownable, ReentrancyGuard {
     /// @param id Token id to burn
     /// @param amount Number of tokens to burn
     function burn(address account, uint256 id, uint256 amount) public {
-        require(account == msg.sender || isApprovedForAll(account, msg.sender), "not owner nor approved");
+        require(
+            account == msg.sender ||
+                isApprovedForAll(account, msg.sender) ||
+                (msg.sender == memeManifesto && id == RED_BOOK_ID),
+            "not owner nor approved"
+        );
         _burn(account, id, amount);
         if (id == RED_BOOK_ID) {
             totalRedBooksBurned += amount;

@@ -35,6 +35,7 @@ describe('MemeManifesto', function () {
     await expect(manifesto.connect(owner).proposePage('next'))
       .to.emit(manifesto, 'PageAdded')
       .withArgs(2n, 1n, owner.address, 'next');
+    expect(await redBook.balanceOf(owner.address, 1)).to.equal(9n);
   });
 
   it('allows contributors to claim chapter NFTs', async function () {
@@ -64,5 +65,11 @@ describe('MemeManifesto', function () {
     await expect(manifesto.connect(user2).claimChapter(1))
       .to.emit(manifesto, 'ChapterTokenClaimed')
       .withArgs(1n, user2.address, 2n);
+  });
+
+  it('burns a red book for each submitted page', async function () {
+    const before = await redBook.balanceOf(owner.address, 1);
+    await manifesto.connect(owner).proposePage('first');
+    expect(await redBook.balanceOf(owner.address, 1)).to.equal(before - 1n);
   });
 });
