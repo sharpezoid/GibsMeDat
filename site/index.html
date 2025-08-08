@@ -24,10 +24,69 @@
         'function symbol() view returns (string)',
       ];
 
+      function PolitburoPanel({ holders }) {
+        return React.createElement(
+          'div',
+          { className: 'side-panel' },
+          React.createElement('h3', { className: 'subtitle' }, 'Politburo'),
+          React.createElement(
+            'ul',
+            { className: 'politburo-list' },
+            holders.map((h, idx) =>
+              React.createElement(
+                'li',
+                { key: idx },
+                React.createElement(
+                  'a',
+                  {
+                    href: `https://etherscan.io/address/${h.address}`,
+                    target: '_blank',
+                    rel: 'noopener noreferrer',
+                  },
+                  h.address
+                ),
+                React.createElement(
+                  'div',
+                  null,
+                  `Manifesto NFTs: ${h.manifesto}`
+                ),
+                React.createElement(
+                  'div',
+                  null,
+                  `Redbooks: ${h.redbook}`
+                ),
+                React.createElement('div', null, `$GIBS: ${h.gibs}`)
+              )
+            )
+          )
+        );
+      }
+
       function App() {
         const [supply, setSupply] = useState('6,942,080,085');
         const [gulaged, setGulaged] = useState('0');
         const [connected, setConnected] = useState(false);
+        const sampleHolders = [
+          {
+            address: '0x1111111111111111111111111111111111111111',
+            manifesto: 0,
+            redbook: 0,
+            gibs: 0,
+          },
+          {
+            address: '0x2222222222222222222222222222222222222222',
+            manifesto: 0,
+            redbook: 0,
+            gibs: 0,
+          },
+          {
+            address: '0x3333333333333333333333333333333333333333',
+            manifesto: 0,
+            redbook: 0,
+            gibs: 0,
+          },
+        ];
+        const [politburo, setPolitburo] = useState(sampleHolders);
 
         async function loadSupply() {
           try {
@@ -59,39 +118,44 @@
         }, [connected]);
 
         return React.createElement(
-          'main',
-          { className: 'container' },
+          React.Fragment,
+          null,
           React.createElement(
-            'h2',
-            { className: 'subtitle' },
-            '$GIBS – From each according to their bags, to each according to their memes.'
-          ),
-          React.createElement(
-            'ul',
-            { className: 'stats' },
-            React.createElement('li', null, `Total Supply: ${supply}`),
-            React.createElement('li', null, `Total Gulaged: ${gulaged}`),
+            'main',
+            { className: 'container' },
             React.createElement(
-              'li',
-              null,
-              'Transfer Tax: 0.69% (0.3% reflection, 0.3% treasury, 0.09% burn)'
+              'h2',
+              { className: 'subtitle' },
+              '$GIBS – From each according to their bags, to each according to their memes.'
+            ),
+            React.createElement(
+              'ul',
+              { className: 'stats' },
+              React.createElement('li', null, `Total Supply: ${supply}`),
+              React.createElement('li', null, `Total Gulaged: ${gulaged}`),
+              React.createElement(
+                'li',
+                null,
+                'Transfer Tax: 0.69% (0.3% reflection, 0.3% treasury, 0.09% burn)'
+              )
+            ),
+            React.createElement(
+              'button',
+              { onClick: connect, className: 'connect' },
+              connected ? 'Wallet Connected' : 'Connect Wallet'
+            ),
+            React.createElement(
+              'p',
+              { className: 'footer' },
+              'Stake in the Proletariat Vault, help craft the on-chain Meme Manifesto, and direct the Gibs Treasury DAO.'
+            ),
+            React.createElement(
+              'a',
+              { href: 'manifesto.html', className: 'footer' },
+              'Read the Meme Manifesto'
             )
           ),
-          React.createElement(
-            'button',
-            { onClick: connect, className: 'connect' },
-            connected ? 'Wallet Connected' : 'Connect Wallet'
-          ),
-          React.createElement(
-            'p',
-            { className: 'footer' },
-            'Stake in the Proletariat Vault, help craft the on-chain Meme Manifesto, and direct the Gibs Treasury DAO.'
-          ),
-          React.createElement(
-            'a',
-            { href: 'manifesto.html', className: 'footer' },
-            'Read the Meme Manifesto'
-          )
+          React.createElement(PolitburoPanel, { holders: politburo })
         );
       }
 
