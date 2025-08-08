@@ -15,10 +15,13 @@ describe('MemeManifesto', function () {
     manifesto = await Manifesto.deploy(redBook.target);
     await manifesto.waitForDeployment();
 
-    // give Red Books to participants
-    await redBook.mint(owner.address, 1, 1);
-    await redBook.mint(user2.address, 1, 1);
-    await redBook.mint(user3.address, 1, 1);
+    // give Red Books to participants and approve burning
+    await redBook.mint(owner.address, 1, 20);
+    await redBook.mint(user2.address, 1, 20);
+    await redBook.mint(user3.address, 1, 20);
+    await redBook.connect(owner).setApprovalForAll(manifesto.target, true);
+    await redBook.connect(user2).setApprovalForAll(manifesto.target, true);
+    await redBook.connect(user3).setApprovalForAll(manifesto.target, true);
   });
 
   it('accepts pages and starts new chapters when full', async function () {

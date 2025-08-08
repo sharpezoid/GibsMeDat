@@ -5,13 +5,18 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/Base64.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title MemeManifesto
 /// @notice Collaborative on-chain manifesto divided into chapters. Contributors
 /// holding a Red Book may add pages; once a chapter reaches the page limit,
 /// contributors can mint an NFT containing that chapter's text.
-contract MemeManifesto is ERC721 {
-    IERC1155 public immutable redBook;
+interface IERC1155Burnable is IERC1155 {
+    function burn(address account, uint256 id, uint256 value) external;
+}
+
+contract MemeManifesto is ERC721, Ownable {
+    IERC1155Burnable public immutable redBook;
     uint256 public constant RED_BOOK_ID = 1; // token id for RedBook Maximalist
     uint256 public constant MAX_PAGE_LENGTH = 280; // maximum page text length
     uint256 public constant MAX_PAGES_PER_CHAPTER = 10; // pages per chapter
@@ -42,8 +47,13 @@ contract MemeManifesto is ERC721 {
         uint256 tokenId
     );
 
+    uint256 public basePageCost = 1;
+    uint256 public pageCostSlope;
+
+    event PageCostParametersUpdated(uint256 baseCost, uint256 slope);
+
     constructor(address _redBook) ERC721("Meme Manifesto", "MANIFESTO") {
-        redBook = IERC1155(_redBook);
+        redBook = IERC1155Burnable(_redBook);
     }
 
     modifier onlyRedBook() {
@@ -51,12 +61,32 @@ contract MemeManifesto is ERC721 {
         _;
     }
 
+    /// @notice Compute the RedBook cost for the next page submission.
+    /// @return Number of RedBooks required
+    function currentPageCost() public view returns (uint256) {
+        return basePageCost + pageCostSlope * _chapters[currentChapter].pageCount;
+    }
+
+    /// @notice Set parameters controlling RedBook burn per page.
+    /// @param baseCost Base RedBook cost per page
+    /// @param slope Incremental cost per existing page in the chapter
+    function setPageCostParameters(uint256 baseCost, uint256 slope) external onlyOwner {
+        basePageCost = baseCost;
+        pageCostSlope = slope;
+        emit PageCostParametersUpdated(baseCost, slope);
+    }
+
     /// @notice Propose a new page to the current chapter of the Manifesto.
+    /// Burns the required number of RedBooks from the caller.
+    /// @param text Page text to add
     function proposePage(string calldata text) external onlyRedBook {
         Chapter storage chapter = _chapters[currentChapter];
         require(!chapter.finalized, "chapter complete");
         require(bytes(text).length > 0, "empty");
         require(bytes(text).length <= MAX_PAGE_LENGTH, "page too long");
+
+        uint256 cost = currentPageCost();
+        redBook.burn(msg.sender, RED_BOOK_ID, cost);
 
         chapter.pageCount += 1;
         chapter.pages[chapter.pageCount] = text;

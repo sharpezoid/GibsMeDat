@@ -15,6 +15,12 @@ contract ProletariatVault is ERC1155, Ownable, ReentrancyGuard {
     IERC20 public immutable gibs;
     uint256 public constant RED_BOOK_ID = 1; // Special NFT for manifesto edits & DAO votes
 
+    uint256 public totalRedBooksMinted;
+    uint256 public totalRedBooksBurned;
+
+    uint256 public baseStakeRequirement = 1;
+    uint256 public stakeRequirementSlope;
+
     struct StakeInfo {
         uint256 amount;     // amount of GIBS staked
         uint256 startTime;  // time of last stake
@@ -26,14 +32,45 @@ contract ProletariatVault is ERC1155, Ownable, ReentrancyGuard {
 
     event Staked(address indexed comrade, uint256 indexed id, uint256 amount);
     event Unstaked(address indexed comrade, uint256 indexed id, uint256 amount, uint256 memeYield);
+    event StakeParametersUpdated(uint256 baseRequirement, uint256 slope);
 
     constructor(address token) ERC1155("") {
         gibs = IERC20(token);
     }
 
+    /// @notice Compute the current minimum stake requirement.
+    /// @return minimum amount of GIBS required to stake
+    function currentStakeRequirement() public view returns (uint256) {
+        return baseStakeRequirement + stakeRequirementSlope * totalRedBooksMinted;
+    }
+
+    /// @notice Set parameters controlling the staking requirement.
+    /// @param baseRequirement Base GIBS required for staking
+    /// @param slope Incremental cost per Red Book minted
+    function setStakeParameters(uint256 baseRequirement, uint256 slope) external onlyOwner {
+        baseStakeRequirement = baseRequirement;
+        stakeRequirementSlope = slope;
+        emit StakeParametersUpdated(baseRequirement, slope);
+    }
+
+    /// @notice Burn tokens from an account and track burn metrics.
+    /// @param account Token holder address
+    /// @param id Token id to burn
+    /// @param amount Number of tokens to burn
+    function burn(address account, uint256 id, uint256 amount) public {
+        require(account == msg.sender || isApprovedForAll(account, msg.sender), "not owner nor approved");
+        _burn(account, id, amount);
+        if (id == RED_BOOK_ID) {
+            totalRedBooksBurned += amount;
+        }
+    }
+
     /// @notice Stake GIBS into a specific vault type.
+    /// @param id Vault identifier to stake into
+    /// @param amount Amount of GIBS to stake
     function stake(uint256 id, uint256 amount) external nonReentrant {
-        require(amount > 0, "amount = 0");
+        uint256 requirement = currentStakeRequirement();
+        require(amount >= requirement, "stake below requirement");
         StakeInfo storage s = stakes[id][msg.sender];
 
         gibs.safeTransferFrom(msg.sender, address(this), amount);
@@ -46,6 +83,9 @@ contract ProletariatVault is ERC1155, Ownable, ReentrancyGuard {
         s.startTime = block.timestamp;
 
         _mint(msg.sender, id, 1, "");
+        if (id == RED_BOOK_ID) {
+            totalRedBooksMinted += 1;
+        }
         emit Staked(msg.sender, id, amount);
     }
 
@@ -61,7 +101,11 @@ contract ProletariatVault is ERC1155, Ownable, ReentrancyGuard {
         delete stakes[id][msg.sender];
 
         gibs.safeTransfer(msg.sender, amount);
-        _burn(msg.sender, id, balanceOf(msg.sender, id));
+        uint256 balance = balanceOf(msg.sender, id);
+        _burn(msg.sender, id, balance);
+        if (id == RED_BOOK_ID) {
+            totalRedBooksBurned += balance;
+        }
 
         emit Unstaked(msg.sender, id, amount, yield);
     }
