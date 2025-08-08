@@ -24,6 +24,24 @@
         'function pages(uint256) view returns (string)',
       ];
 
+      function StakePanel() {
+        return React.createElement(
+          'div',
+          { className: 'side-panel' },
+          React.createElement('h3', { className: 'subtitle' }, 'Stake $GIBS'),
+          React.createElement('input', {
+            type: 'text',
+            placeholder: 'Amount',
+            className: 'stake-input',
+          }),
+          React.createElement(
+            'button',
+            { className: 'connect' },
+            'Stake'
+          )
+        );
+      }
+
       function App() {
         const [pages, setPages] = useState([]);
 
@@ -52,23 +70,28 @@
         }, []);
 
         return React.createElement(
-          'main',
-          { className: 'container' },
+          React.Fragment,
+          null,
           React.createElement(
-            'h2',
-            { className: 'subtitle' },
-            'Meme Manifesto'
+            'main',
+            { className: 'container' },
+            React.createElement(
+              'h2',
+              { className: 'subtitle' },
+              'Meme Manifesto'
+            ),
+            React.createElement(
+              'p',
+              { className: 'subtitle' },
+              'Each page submission burns one Red Book. Stake again in the Proletariat Vault to earn more for additional entries.'
+            ),
+            React.createElement(
+              'ol',
+              { className: 'stats' },
+              pages.map((p, idx) => React.createElement('li', { key: idx }, p))
+            )
           ),
-          React.createElement(
-            'p',
-            { className: 'subtitle' },
-            'Each page submission burns one Red Book. Stake again in the Proletariat Vault to earn more for additional entries.'
-          ),
-          React.createElement(
-            'ol',
-            { className: 'stats' },
-            pages.map((p, idx) => React.createElement('li', { key: idx }, p))
-          )
+          React.createElement(StakePanel)
         );
       }
 
