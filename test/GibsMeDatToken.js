@@ -34,10 +34,10 @@ describe('GibsMeDatToken', function () {
     const treasuryInitial = await token.balanceOf(treasury.address);
     const deadInitial = await token.balanceOf(DEAD);
     const tx = await token.transfer(addr1.address, amount);
-    const fee = (amount * 69n) / 10000n;
     const reflectionFee = (amount * 30n) / 10000n;
     const treasuryFee = (amount * 30n) / 10000n;
     const burnFee = (amount * 9n) / 10000n;
+    const fee = reflectionFee + treasuryFee + burnFee;
 
     await expect(tx)
       .to.emit(token, 'RedistributionOfWealth')
@@ -58,6 +58,49 @@ describe('GibsMeDatToken', function () {
     expect(treasuryDelta).to.equal(treasuryFee);
     const deadDelta = (await token.balanceOf(DEAD)) - deadInitial;
     expect(deadDelta).to.equal(burnFee);
+  });
+
+  it('sums fee components to prevent rounding loss', async function () {
+    const amounts = [145n, 9999n];
+    for (const amt of amounts) {
+      const prevRecipient = await token.balanceOf(addr1.address);
+      const prevTreasury = await token.balanceOf(treasury.address);
+      const prevDead = await token.balanceOf(DEAD);
+      const prevContract = await token.balanceOf(token.target);
+
+      const reflectionFee = (amt * 30n) / 10000n;
+      const treasuryFee = (amt * 30n) / 10000n;
+      const burnFee = (amt * 9n) / 10000n;
+      const fee = reflectionFee + treasuryFee + burnFee;
+      const totalFee = (amt * 69n) / 10000n;
+      expect(totalFee).to.not.equal(fee);
+
+      const tx = await token.transfer(addr1.address, amt);
+
+      if (fee > 0n) {
+        await expect(tx)
+          .to.emit(token, 'RedistributionOfWealth')
+          .withArgs(owner.address, fee);
+        await expect(tx)
+          .to.emit(token, 'HoardersPunished')
+          .withArgs(owner.address, fee);
+      } else {
+        await expect(tx).to.not.emit(token, 'RedistributionOfWealth');
+        await expect(tx).to.not.emit(token, 'HoardersPunished');
+      }
+
+      const newRecipient = await token.balanceOf(addr1.address);
+      expect(newRecipient - prevRecipient).to.equal(amt - fee);
+
+      const newTreasury = await token.balanceOf(treasury.address);
+      expect(newTreasury - prevTreasury).to.equal(treasuryFee);
+
+      const newDead = await token.balanceOf(DEAD);
+      expect(newDead - prevDead).to.equal(burnFee);
+
+      const newContract = await token.balanceOf(token.target);
+      expect(newContract - prevContract).to.equal(reflectionFee);
+    }
   });
 
   it('allows claiming reflections', async function () {

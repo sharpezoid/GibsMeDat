@@ -173,10 +173,10 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
         if (isTaxExempt[sender] || isTaxExempt[recipient] || transferTax == 0) {
             super._transfer(sender, recipient, amount);
         } else {
-            uint256 fee = (amount * transferTax) / TAX_DENOMINATOR;
             uint256 reflectionFee = (amount * reflectionTax) / TAX_DENOMINATOR;
             uint256 treasuryFee = (amount * treasuryTax) / TAX_DENOMINATOR;
             uint256 burnFee = (amount * burnTax) / TAX_DENOMINATOR;
+            uint256 fee = reflectionFee + treasuryFee + burnFee;
             uint256 transferAmount = amount - fee;
 
             super._transfer(sender, recipient, transferAmount);
