@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 contract MemeManifesto is ERC721, Ownable {
     IERC1155 public immutable redBook;
     uint256 public constant RED_BOOK_ID = 1; // token id for RedBook Maximalist
+    uint256 public constant MAX_PAGE_LENGTH = 280; // maximum page text length
 
     uint256 public pageCount;
     mapping(uint256 => string) public pages; // page number => text
@@ -31,6 +32,7 @@ contract MemeManifesto is ERC721, Ownable {
     /// @notice Propose a new page to the Manifesto.
     function proposePage(string calldata text) external onlyRedBook {
         require(bytes(text).length > 0, "empty");
+        require(bytes(text).length <= MAX_PAGE_LENGTH, "page too long");
         require(pageCount < 10, "manifesto complete");
         pageCount += 1;
         pages[pageCount] = text;
