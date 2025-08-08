@@ -2,10 +2,10 @@ const { expect } = require('chai');
 const { ethers } = require('hardhat');
 
 describe('ProletariatVault', function () {
-  let token, vault, owner, user;
+  let token, vault, owner, user, manifesto;
 
   beforeEach(async function () {
-    [owner, user] = await ethers.getSigners();
+    [owner, user, manifesto] = await ethers.getSigners();
     const Token = await ethers.getContractFactory('FailingERC20');
     token = await Token.deploy();
     await token.waitForDeployment();
@@ -75,6 +75,21 @@ describe('ProletariatVault', function () {
     expect(await vault.totalRedBooksMinted()).to.equal(2n);
 
     await vault.connect(user).burn(user.address, 1, 1n);
+    expect(await vault.totalRedBooksBurned()).to.equal(1n);
+  });
+
+  it('allows only the manifesto to burn without approval', async function () {
+    await vault.connect(owner).setMemeManifesto(manifesto.address);
+    await token.mint(user.address, 100n);
+    await token.connect(user).approve(vault.target, 100n);
+    await vault.connect(user).stake(1, 10n);
+
+    await expect(
+      vault.connect(owner).burn(user.address, 1, 1n)
+    ).to.be.revertedWith('not owner nor approved');
+
+    await expect(vault.connect(manifesto).burn(user.address, 1, 1n)).to.not.be
+      .reverted;
     expect(await vault.totalRedBooksBurned()).to.equal(1n);
   });
 });
