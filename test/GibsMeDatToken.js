@@ -124,6 +124,41 @@ describe('GibsMeDatToken', function () {
     expect(after - before).to.equal(100n);
   });
 
+  it('allows approvals via permit', async function () {
+    const value = ethers.parseUnits('100', 18);
+    const nonce = await token.nonces(owner.address);
+    const deadline = ethers.MaxUint256;
+    const domain = {
+      name: 'Gibs Me Dat',
+      version: '1',
+      chainId: (await ethers.provider.getNetwork()).chainId,
+      verifyingContract: token.target,
+    };
+    const types = {
+      Permit: [
+        { name: 'owner', type: 'address' },
+        { name: 'spender', type: 'address' },
+        { name: 'value', type: 'uint256' },
+        { name: 'nonce', type: 'uint256' },
+        { name: 'deadline', type: 'uint256' },
+      ],
+    };
+    const signature = await owner.signTypedData(domain, types, {
+      owner: owner.address,
+      spender: addr1.address,
+      value,
+      nonce,
+      deadline,
+    });
+    const { v, r, s } = ethers.Signature.from(signature);
+    await token.permit(owner.address, addr1.address, value, deadline, v, r, s);
+    expect(await token.allowance(owner.address, addr1.address)).to.equal(value);
+    await token
+      .connect(addr1)
+      .transferFrom(owner.address, addr1.address, value);
+    expect(await token.allowance(owner.address, addr1.address)).to.equal(0n);
+  });
+
   it('does not underflow when reflection credited exceeds new value', async function () {
     const amount = ethers.parseUnits('1000', 18);
     await token.setTaxExempt(addr1.address, true);
