@@ -2,10 +2,11 @@ const { expect } = require('chai');
 const { ethers } = require('hardhat');
 
 describe('MemeManifesto', function () {
-  let owner, redBook, manifesto;
+  let owner, user2, user3, redBook, manifesto;
 
   beforeEach(async function () {
-    [owner] = await ethers.getSigners();
+    [owner, user2, user3] = await ethers.getSigners();
+
     const RedBook = await ethers.getContractFactory('MockRedBook');
     redBook = await RedBook.deploy();
     await redBook.waitForDeployment();
@@ -14,51 +15,51 @@ describe('MemeManifesto', function () {
     manifesto = await Manifesto.deploy(redBook.target);
     await manifesto.waitForDeployment();
 
+    // give Red Books to participants
     await redBook.mint(owner.address, 1, 1);
+    await redBook.mint(user2.address, 1, 1);
+    await redBook.mint(user3.address, 1, 1);
   });
 
-  it('accepts pages up to maximum length', async function () {
-    const maxLen = Number(await manifesto.MAX_PAGE_LENGTH());
-    const text = 'a'.repeat(maxLen);
-    await expect(manifesto.proposePage(text))
-      .to.emit(manifesto, 'PageAdded')
-      .withArgs(1n, owner.address, text);
-  });
-
-  it('rejects pages exceeding maximum length', async function () {
-    const maxLen = Number(await manifesto.MAX_PAGE_LENGTH());
-    const text = 'a'.repeat(maxLen + 1);
-    await expect(manifesto.proposePage(text)).to.be.revertedWith(
-      'page too long'
-    );
-  });
-
-  it('enforces a maximum of 10 pages', async function () {
+  it('accepts pages and starts new chapters when full', async function () {
     for (let i = 0; i < 10; i++) {
-      await expect(manifesto.proposePage('p' + i))
+      await expect(manifesto.connect(owner).proposePage('p' + i))
         .to.emit(manifesto, 'PageAdded')
-        .withArgs(BigInt(i + 1), owner.address, 'p' + i);
+        .withArgs(1n, BigInt(i + 1), owner.address, 'p' + i);
     }
-    await expect(manifesto.proposePage('extra')).to.be.revertedWith(
-      'manifesto complete'
-    );
+
+    // next page should start chapter 2 at page 1
+    await expect(manifesto.connect(owner).proposePage('next'))
+      .to.emit(manifesto, 'PageAdded')
+      .withArgs(2n, 1n, owner.address, 'next');
   });
 
-  it('allows ghost minting only after completion', async function () {
-    await expect(manifesto.mintGhostOfMarx(owner.address)).to.be.revertedWith(
-      'not enough pages'
-    );
+  it('allows contributors to claim chapter NFTs', async function () {
+    // owner and user2 contribute
+    await manifesto.connect(owner).proposePage('owner page');
+    await manifesto.connect(user2).proposePage('user2 page');
 
-    for (let i = 0; i < 10; i++) {
-      await manifesto.proposePage('p' + i);
+    // fill remaining pages by owner
+    for (let i = 0; i < 8; i++) {
+      await manifesto.connect(owner).proposePage('filler' + i);
     }
 
-    await expect(manifesto.mintGhostOfMarx(owner.address))
-      .to.emit(manifesto, 'GhostOfMarxMinted')
-      .withArgs(owner.address);
-
-    await expect(manifesto.mintGhostOfMarx(owner.address)).to.be.revertedWith(
-      'ghost summoned'
+    // user3 did not contribute and should fail to claim
+    await expect(manifesto.connect(user3).claimChapter(1)).to.be.revertedWith(
+      'no contribution'
     );
+
+    // contributors can claim once
+    await expect(manifesto.connect(owner).claimChapter(1))
+      .to.emit(manifesto, 'ChapterTokenClaimed')
+      .withArgs(1n, owner.address, 1n);
+
+    await expect(manifesto.connect(owner).claimChapter(1)).to.be.revertedWith(
+      'already claimed'
+    );
+
+    await expect(manifesto.connect(user2).claimChapter(1))
+      .to.emit(manifesto, 'ChapterTokenClaimed')
+      .withArgs(1n, user2.address, 2n);
   });
 });
