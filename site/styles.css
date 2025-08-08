@@ -1,8 +1,12 @@
 body, html {
   height: 100%;
   margin: 0;
-  background: url('images/Background.png') no-repeat center center fixed;
-  background-size: cover;
+  background-color: #cc0000;
+  background-image: url('images/Background.png');
+  background-repeat: no-repeat;
+  background-position: top center;
+  background-attachment: fixed;
+  background-size: auto;
   color: #ffeedd;
   font-family: 'Comic Sans MS', 'Comic Sans', sans-serif;
 }
@@ -23,16 +27,13 @@ body, html {
   padding: 2rem;
   border: 2px solid #cc0000;
   background: #330000;
+  border-radius: 10px;
   box-sizing: border-box;
-}
-
-.title {
-  margin: 0;
-  color: #ffcc00;
 }
 
 .subtitle {
   margin: 0;
+  padding-top: 1rem;
   font-weight: 300;
   color: #ffeedd;
 }
@@ -51,6 +52,7 @@ body, html {
   margin: 0.5rem 0;
   width: 100%;
   box-sizing: border-box;
+  border-radius: 8px;
 }
 
 .connect {
@@ -62,6 +64,7 @@ body, html {
   cursor: pointer;
   width: 100%;
   max-width: 200px;
+  border-radius: 8px;
 }
 
 .footer {
