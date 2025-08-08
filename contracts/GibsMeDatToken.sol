@@ -7,11 +7,13 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title Gibs Me Dat Token
 /// @notice Satirical meme token of the people. Features a 0.69% transfer tax
 /// that redistributes wealth, funds the treasury, and sends some to the Gulag.
 contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable {
+    using SafeERC20 for IERC20;
     uint256 public constant INITIAL_SUPPLY = 6_942_080_085 * 10 ** 18;
     uint256 public constant TAX_DENOMINATOR = 10_000; // basis points
     uint256 public transferTax = 69; // 0.69%
@@ -113,8 +115,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
         if (token == address(this)) {
             super._transfer(address(this), to, amount);
         } else {
-            bool ok = IERC20(token).transfer(to, amount);
-            require(ok, "transfer failed");
+            IERC20(token).safeTransfer(to, amount);
         }
         emit TokensRescued(token, to, amount);
     }
