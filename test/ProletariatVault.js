@@ -14,6 +14,21 @@ describe('ProletariatVault', function () {
     await vault.waitForDeployment();
   });
 
+  it('allows staking and accrues yield over time', async function () {
+    await token.mint(user.address, 100n);
+    await token.connect(user).approve(vault.target, 100n);
+    await expect(vault.connect(user).stake(1, 10n))
+      .to.emit(vault, 'Staked')
+      .withArgs(user.address, 1n, 10n);
+
+    await ethers.provider.send('evm_increaseTime', [100]);
+    await ethers.provider.send('evm_mine');
+
+    await expect(vault.connect(user).unstake(1))
+      .to.emit(vault, 'Unstaked')
+      .withArgs(user.address, 1n, 10n, 1010n);
+  });
+
   it('guards against reentrancy in stake and unstake', async function () {
     const Attacker = await ethers.getContractFactory('ReentrancyAttacker');
     const attacker = await Attacker.deploy(vault.target);

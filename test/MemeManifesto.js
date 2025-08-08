@@ -32,4 +32,33 @@ describe('MemeManifesto', function () {
       'page too long'
     );
   });
+
+  it('enforces a maximum of 10 pages', async function () {
+    for (let i = 0; i < 10; i++) {
+      await expect(manifesto.proposePage('p' + i))
+        .to.emit(manifesto, 'PageAdded')
+        .withArgs(BigInt(i + 1), owner.address, 'p' + i);
+    }
+    await expect(manifesto.proposePage('extra')).to.be.revertedWith(
+      'manifesto complete'
+    );
+  });
+
+  it('allows ghost minting only after completion', async function () {
+    await expect(
+      manifesto.mintGhostOfMarx(owner.address)
+    ).to.be.revertedWith('not enough pages');
+
+    for (let i = 0; i < 10; i++) {
+      await manifesto.proposePage('p' + i);
+    }
+
+    await expect(manifesto.mintGhostOfMarx(owner.address))
+      .to.emit(manifesto, 'GhostOfMarxMinted')
+      .withArgs(owner.address);
+
+    await expect(
+      manifesto.mintGhostOfMarx(owner.address)
+    ).to.be.revertedWith('ghost summoned');
+  });
 });

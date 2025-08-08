@@ -4,10 +4,10 @@ const { ethers } = require('hardhat');
 const TOKEN_ID = 1;
 
 describe('GibsTreasuryDAO', function () {
-  let dao, redBook, gasGuzzler, owner;
+  let dao, redBook, gasGuzzler, owner, other;
 
   beforeEach(async function () {
-    [owner] = await ethers.getSigners();
+    [owner, other] = await ethers.getSigners();
     const RedBook = await ethers.getContractFactory('MockRedBook');
     redBook = await RedBook.deploy();
     await redBook.waitForDeployment();
@@ -41,5 +41,34 @@ describe('GibsTreasuryDAO', function () {
       amount
     );
     expect(await gasGuzzler.gasLeft()).to.be.gt(2300n);
+  });
+
+  it('runs proposal lifecycle with majority support', async function () {
+    const amount = ethers.parseEther('0.2');
+    await dao.propose(other.address, amount);
+    const id = await dao.proposalCount();
+    await dao.vote(id, true);
+
+    await ethers.provider.send('evm_increaseTime', [3 * 24 * 60 * 60]);
+    await ethers.provider.send('evm_mine');
+
+    const before = await ethers.provider.getBalance(other.address);
+    await expect(dao.execute(id)).to.emit(dao, 'Executed').withArgs(id, true);
+    const after = await ethers.provider.getBalance(other.address);
+    expect(after - before).to.equal(amount);
+  });
+
+  it('fails execution without quorum', async function () {
+    const amount = ethers.parseEther('0.05');
+    await dao.propose(other.address, amount);
+    const id = await dao.proposalCount();
+
+    await ethers.provider.send('evm_increaseTime', [3 * 24 * 60 * 60]);
+    await ethers.provider.send('evm_mine');
+
+    const before = await ethers.provider.getBalance(other.address);
+    await expect(dao.execute(id)).to.emit(dao, 'Executed').withArgs(id, false);
+    const after = await ethers.provider.getBalance(other.address);
+    expect(after).to.equal(before);
   });
 });
