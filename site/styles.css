@@ -1,8 +1,10 @@
 body, html {
   height: 100%;
   margin: 0;
-  background: #8b0000;
+  background: url('images/Background.png') no-repeat center center fixed;
+  background-size: cover;
   color: #ffeedd;
+  font-family: 'Comic Sans MS', 'Comic Sans', sans-serif;
 }
 
 .container {
