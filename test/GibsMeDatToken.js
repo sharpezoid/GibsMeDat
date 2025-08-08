@@ -192,6 +192,17 @@ describe('GibsMeDatToken', function () {
     expect(after - before).to.equal(100n);
   });
 
+  it('rescues tokens without return value', async function () {
+    const NoReturn = await ethers.getContractFactory('NoReturnERC20');
+    const nr = await NoReturn.deploy();
+    await nr.waitForDeployment();
+    await nr.mint(token.target, 50n);
+    await expect(token.rescueTokens(nr.target, owner.address, 50n))
+      .to.emit(token, 'TokensRescued')
+      .withArgs(nr.target, owner.address, 50n);
+    expect(await nr.balanceOf(owner.address)).to.equal(50n);
+  });
+
   it('allows approvals via permit', async function () {
     const value = ethers.parseUnits('100', 18);
     const nonce = await token.nonces(owner.address);
