@@ -32,3 +32,11 @@ These instructions apply to all Solidity contracts and related tests within this
 
 - Use `require` statements with clear error messages.
 - Place events above functions and emit them for critical state changes.
+
+## Tokenomics Parameters
+
+- `ProletariatVault` stake requirement:
+  `baseStakeRequirement + stakeRequirementSlope * totalRedBooksMinted`.
+- `MemeManifesto` page cost:
+  `basePageCost + pageCostSlope * currentPageCount`.
+- Governance may update these values through the respective setter functions.

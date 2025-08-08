@@ -2,10 +2,10 @@ const { expect } = require('chai');
 const { ethers } = require('hardhat');
 
 describe('ProletariatVault', function () {
-  let token, vault, user;
+  let token, vault, owner, user;
 
   beforeEach(async function () {
-    [, user] = await ethers.getSigners();
+    [owner, user] = await ethers.getSigners();
     const Token = await ethers.getContractFactory('FailingERC20');
     token = await Token.deploy();
     await token.waitForDeployment();
@@ -21,12 +21,16 @@ describe('ProletariatVault', function () {
       .to.emit(vault, 'Staked')
       .withArgs(user.address, 1n, 10n);
 
+    expect(await vault.totalRedBooksMinted()).to.equal(1n);
+
     await ethers.provider.send('evm_increaseTime', [100]);
     await ethers.provider.send('evm_mine');
 
     await expect(vault.connect(user).unstake(1))
       .to.emit(vault, 'Unstaked')
       .withArgs(user.address, 1n, 10n, 1010n);
+
+    expect(await vault.totalRedBooksBurned()).to.equal(1n);
   });
 
   it('guards against reentrancy in stake and unstake', async function () {
@@ -56,5 +60,21 @@ describe('ProletariatVault', function () {
     await expect(vault.connect(user).unstake(1)).to.be.revertedWith(
       'SafeERC20: ERC20 operation did not succeed'
     );
+  });
+
+  it('enforces dynamic staking requirements and tracks burns', async function () {
+    await vault.connect(owner).setStakeParameters(1n, 1n);
+    await token.mint(user.address, 100n);
+    await token.connect(user).approve(vault.target, 100n);
+
+    await vault.connect(user).stake(1, 1n);
+    await expect(vault.connect(user).stake(1, 1n)).to.be.revertedWith(
+      'stake below requirement'
+    );
+    await vault.connect(user).stake(1, 2n);
+    expect(await vault.totalRedBooksMinted()).to.equal(2n);
+
+    await vault.connect(user).burn(user.address, 1, 1n);
+    expect(await vault.totalRedBooksBurned()).to.equal(1n);
   });
 });

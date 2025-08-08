@@ -11,4 +11,9 @@ contract MockRedBook is ERC1155 {
     function mint(address to, uint256 id, uint256 amount) external {
         _mint(to, id, amount, "");
     }
+
+    function burn(address from, uint256 id, uint256 amount) external {
+        require(from == msg.sender || isApprovedForAll(from, msg.sender), "not owner nor approved");
+        _burn(from, id, amount);
+    }
 }

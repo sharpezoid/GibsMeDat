@@ -9,6 +9,28 @@ Satirical meme ecosystem consisting of:
 
 Static page located in `site/` can be deployed to [Fleek](https://fleek.co) for decentralised hosting. The root-level `index.html` simply redirects to this folder so that a default page is served when Fleek points to the repository root.
 
+## Tokenomics
+
+### Dynamic staking cost
+
+`ProletariatVault` enforces a growing minimum stake:
+
+```
+currentStakeRequirement = baseStakeRequirement + stakeRequirementSlope * totalRedBooksMinted
+```
+
+Governance can adjust `baseStakeRequirement` and `stakeRequirementSlope` via `setStakeParameters`.
+
+### Variable page submission cost
+
+Adding a page to the `MemeManifesto` burns RedBooks based on the number of pages already written in the current chapter:
+
+```
+currentPageCost = basePageCost + pageCostSlope * currentPageCount
+```
+
+Administrators may tune `basePageCost` and `pageCostSlope` using `setPageCostParameters`.
+
 ## Development
 
 Compile contracts with Hardhat:
