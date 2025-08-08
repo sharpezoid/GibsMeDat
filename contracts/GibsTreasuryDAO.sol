@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 contract GibsTreasuryDAO is Ownable {
     IERC1155 public immutable redBook;
     uint256 public constant RED_BOOK_ID = 1;
+    uint256 public quorum;
 
     struct Proposal {
         address proposer;
@@ -28,9 +29,17 @@ contract GibsTreasuryDAO is Ownable {
     event ProposalCreated(uint256 indexed id, address indexed proposer, address indexed recipient, uint256 amount);
     event Voted(uint256 indexed id, address indexed comrade, bool support, uint256 weight);
     event Executed(uint256 indexed id, bool passed);
+    event QuorumUpdated(uint256 newQuorum);
 
     constructor(address _redBook) {
         redBook = IERC1155(_redBook);
+    }
+
+    /// @notice Set the minimum total votes required for proposals to be considered.
+    /// @param _quorum New quorum value.
+    function setQuorum(uint256 _quorum) external onlyOwner {
+        quorum = _quorum;
+        emit QuorumUpdated(_quorum);
     }
 
     /// @notice Create proposal to fund a comrade or meme endeavour.
@@ -71,7 +80,7 @@ contract GibsTreasuryDAO is Ownable {
         require(block.timestamp >= p.deadline, "voting ongoing");
         require(!p.executed, "executed");
         p.executed = true;
-        bool passed = p.votesFor > p.votesAgainst;
+        bool passed = p.votesFor + p.votesAgainst >= quorum && p.votesFor > p.votesAgainst;
         if (passed && address(this).balance >= p.amount) {
             Address.sendValue(p.recipient, p.amount);
         }
