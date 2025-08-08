@@ -62,6 +62,23 @@
         );
       }
 
+      function MiddlePanel() {
+        return React.createElement(
+          'div',
+          { className: 'middle-panel' },
+          React.createElement(
+            'h2',
+            { className: 'subtitle' },
+            '$GIBS – From each according to their bags, to each according to their memes.'
+          ),
+          React.createElement(
+            'p',
+            { className: 'subtitle' },
+            'Because in the meme economy, laughs are legal tender.'
+          )
+        );
+      }
+
       function App() {
         const [supply, setSupply] = useState('6,942,080,085');
         const [gulaged, setGulaged] = useState('0');
@@ -123,11 +140,7 @@
           React.createElement(
             'main',
             { className: 'container' },
-            React.createElement(
-              'h2',
-              { className: 'subtitle' },
-              '$GIBS – From each according to their bags, to each according to their memes.'
-            ),
+            React.createElement(MiddlePanel),
             React.createElement(
               'ul',
               { className: 'stats' },
