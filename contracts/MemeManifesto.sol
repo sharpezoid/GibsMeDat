@@ -2,12 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
 /// @title MemeManifesto
 /// @notice Collaborative on-chain manifesto only editable by RedBook Maximalists.
-contract MemeManifesto is ERC721, Ownable {
+contract MemeManifesto is ERC721 {
     IERC1155 public immutable redBook;
     uint256 public constant RED_BOOK_ID = 1; // token id for RedBook Maximalist
     uint256 public constant MAX_PAGE_LENGTH = 280; // maximum page text length
