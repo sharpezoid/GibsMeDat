@@ -58,10 +58,12 @@ describe('GibsTreasuryDAO', function () {
     expect(after - before).to.equal(amount);
   });
 
-  it('fails execution without quorum', async function () {
+  it('fails when quorum not met', async function () {
     const amount = ethers.parseEther('0.05');
+    await dao.setQuorum(2);
     await dao.propose(other.address, amount);
     const id = await dao.proposalCount();
+    await dao.vote(id, true);
 
     await ethers.provider.send('evm_increaseTime', [3 * 24 * 60 * 60]);
     await ethers.provider.send('evm_mine');
@@ -70,5 +72,23 @@ describe('GibsTreasuryDAO', function () {
     await expect(dao.execute(id)).to.emit(dao, 'Executed').withArgs(id, false);
     const after = await ethers.provider.getBalance(other.address);
     expect(after).to.equal(before);
+  });
+
+  it('passes when quorum met', async function () {
+    const amount = ethers.parseEther('0.05');
+    await dao.setQuorum(2);
+    await redBook.mint(other.address, TOKEN_ID, 1);
+    await dao.propose(other.address, amount);
+    const id = await dao.proposalCount();
+    await dao.vote(id, true);
+    await dao.connect(other).vote(id, true);
+
+    await ethers.provider.send('evm_increaseTime', [3 * 24 * 60 * 60]);
+    await ethers.provider.send('evm_mine');
+
+    const before = await ethers.provider.getBalance(other.address);
+    await expect(dao.execute(id)).to.emit(dao, 'Executed').withArgs(id, true);
+    const after = await ethers.provider.getBalance(other.address);
+    expect(after - before).to.equal(amount);
   });
 });
