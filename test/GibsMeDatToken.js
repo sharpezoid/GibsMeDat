@@ -184,6 +184,16 @@ describe('GibsMeDatToken', function () {
     await expect(token.transfer(addr1.address, 100n)).to.not.be.reverted;
   });
 
+  it('allows tax-exempt accounts to exceed max transfer amount', async function () {
+    await token.setMaxTransferAmount(100n);
+    await token.setTaxExempt(addr1.address, true);
+    await expect(token.transfer(addr1.address, 101n)).to.not.be.reverted;
+
+    await token.setTaxExempt(addr1.address, false);
+    await token.setTaxExempt(owner.address, true);
+    await expect(token.transfer(addr1.address, 101n)).to.not.be.reverted;
+  });
+
   it('rescues tokens sent to the contract', async function () {
     await token.transfer(token.target, 100n);
     const before = await token.balanceOf(owner.address);
