@@ -179,6 +179,24 @@ describe('GibsMeDatToken', function () {
     expect(after).to.be.gt(before);
   });
 
+  it('does not accrue reflections for tax-exempt accounts', async function () {
+    const amount = ethers.parseUnits('1000', 18);
+    await token.transfer(addr1.address, amount);
+    await token.setTaxExempt(addr1.address, true);
+    await token.transfer(addr2.address, amount); // generates reflection
+    await expect(
+      token.connect(addr1).claimReflection()
+    ).to.be.revertedWith('nothing to claim');
+
+    await token.setTaxExempt(addr1.address, false);
+    await token.transfer(addr2.address, amount); // generates reflection
+    await expect(
+      token.connect(addr1).claimReflection()
+    )
+      .to.emit(token, 'ReflectionClaimed')
+      .withArgs(addr1.address, anyValue);
+  });
+
   it('reverts claiming reflections if contract balance is insufficient', async function () {
     const amount = ethers.parseUnits('1000', 18);
     await token.transfer(addr1.address, amount);

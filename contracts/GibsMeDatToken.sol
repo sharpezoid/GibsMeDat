@@ -55,6 +55,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable,
     mapping(address => uint256) public reflectionBalance;
     mapping(address => bool) public isTaxExempt;
     uint256 public totalPendingReflection;
+    uint256 public taxExemptSupply;
 
     uint256 public maxTransferAmount;
 
@@ -198,8 +199,23 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable,
 
     /// @notice Whitelist or remove an address from tax and max transfer.
     function setTaxExempt(address account, bool exempt) external onlyOwner {
-        isTaxExempt[account] = exempt;
-        emit TaxExemptionUpdated(account, exempt);
+        if (isTaxExempt[account] != exempt) {
+            _updateReflection(account);
+            if (
+                account != address(this) &&
+                account != DEAD &&
+                account != treasury
+            ) {
+                uint256 bal = balanceOf(account);
+                if (exempt) {
+                    taxExemptSupply += bal;
+                } else {
+                    taxExemptSupply -= bal;
+                }
+            }
+            isTaxExempt[account] = exempt;
+            emit TaxExemptionUpdated(account, exempt);
+        }
     }
 
     /// @notice Set the maximum transfer amount. Zero disables the limit.
@@ -257,6 +273,9 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable,
     }
 
     function _pendingReflection(address account) internal view returns (uint256) {
+        if (isTaxExempt[account]) {
+            return 0;
+        }
         uint256 calc = balanceOf(account) * reflectionPerToken / 1e18;
         if (calc < reflectionCredited[account]) {
             return 0;
@@ -265,7 +284,12 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable,
     }
 
     function _distributeReflection(uint256 amount) internal {
-        uint256 supply = totalSupply() - balanceOf(address(this)) - balanceOf(DEAD) - balanceOf(treasury);
+        uint256 supply =
+            totalSupply() -
+            balanceOf(address(this)) -
+            balanceOf(DEAD) -
+            balanceOf(treasury) -
+            taxExemptSupply;
         if (supply > 0) {
             reflectionPerToken += (amount * 1e18) / supply;
         }
@@ -276,6 +300,24 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable,
         override
         whenNotPaused
     {
+        if (
+            from != address(0) &&
+            isTaxExempt[from] &&
+            from != address(this) &&
+            from != DEAD &&
+            from != treasury
+        ) {
+            taxExemptSupply -= amount;
+        }
+        if (
+            to != address(0) &&
+            isTaxExempt[to] &&
+            to != address(this) &&
+            to != DEAD &&
+            to != treasury
+        ) {
+            taxExemptSupply += amount;
+        }
         if (to == address(0)) {
             _updateReflection(from);
         }
