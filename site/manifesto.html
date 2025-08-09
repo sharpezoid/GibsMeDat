@@ -43,6 +43,29 @@
         );
       }
 
+      function Navigation() {
+        return React.createElement(
+          'nav',
+          { className: 'nav' },
+          React.createElement(
+            'button',
+            {
+              className: 'nav-button',
+              onClick: () => (window.location.href = 'index.html'),
+            },
+            'Main'
+          ),
+          React.createElement(
+            'button',
+            {
+              className: 'nav-button',
+              onClick: () => (window.location.href = 'manifesto.html'),
+            },
+            'Manifesto'
+          )
+        );
+      }
+
       function App() {
         const [pages, setPages] = useState([]);
         const [message, setMessage] = useState('');
@@ -83,6 +106,7 @@
         return React.createElement(
           React.Fragment,
           null,
+          React.createElement(Navigation),
           React.createElement(
             'main',
             { className: 'container' },

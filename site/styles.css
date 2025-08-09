@@ -122,3 +122,21 @@ html {
   color: #ffeedd;
   border-radius: 8px;
 }
+
+.nav {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 1rem;
+}
+
+.nav-button {
+  padding: 0.5rem 1rem;
+  border: 2px solid #ffcc00;
+  background: #cc0000;
+  color: #ffcc00;
+  cursor: pointer;
+  border-radius: 8px;
+}
