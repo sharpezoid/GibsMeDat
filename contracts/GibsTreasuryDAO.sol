@@ -32,13 +32,19 @@ contract GibsTreasuryDAO is Ownable {
     event Executed(uint256 indexed id, bool passed);
     event QuorumUpdated(uint256 newQuorum);
 
-    constructor(address _redBook) {
+    /// @notice Initialize DAO with RedBook token and initial quorum.
+    /// @param _redBook Address of the RedBook ERC1155 token.
+    /// @param _quorum Minimum total votes required for proposals.
+    constructor(address _redBook, uint256 _quorum) {
+        require(_quorum > 0, "quorum zero");
         redBook = IERC1155(_redBook);
+        quorum = _quorum;
     }
 
     /// @notice Set the minimum total votes required for proposals to be considered.
     /// @param _quorum New quorum value.
     function setQuorum(uint256 _quorum) external onlyOwner {
+        require(_quorum > 0, "quorum zero");
         quorum = _quorum;
         emit QuorumUpdated(_quorum);
     }

@@ -11,11 +11,7 @@ describe('GibsMeDatToken', function () {
   beforeEach(async function () {
     [owner, addr1, addr2] = await ethers.getSigners();
     const Timelock = await ethers.getContractFactory('TimelockMock');
-    treasury = await Timelock.deploy(
-      MIN_DELAY,
-      owner.address,
-      owner.address
-    );
+    treasury = await Timelock.deploy(MIN_DELAY, owner.address, owner.address);
     await treasury.waitForDeployment();
     const Token = await ethers.getContractFactory('GibsMeDatToken');
     token = await Token.deploy(treasury.target);
@@ -383,7 +379,7 @@ describe('GibsMeDatToken', function () {
     const red = await RedBook.deploy();
     await red.waitForDeployment();
     const Dao = await ethers.getContractFactory('GibsTreasuryDAO');
-    const dao = await Dao.deploy(red.target);
+    const dao = await Dao.deploy(red.target, 1);
     await dao.waitForDeployment();
     await expect(token.setGovernance(dao.target))
       .to.emit(token, 'GovernanceTransferred')
@@ -402,7 +398,7 @@ describe('GibsMeDatToken', function () {
     await red.mint(addr1.address, 1, 1);
 
     const Dao = await ethers.getContractFactory('GibsTreasuryDAO');
-    const dao = await Dao.deploy(red.target);
+    const dao = await Dao.deploy(red.target, 1);
     await dao.waitForDeployment();
     await dao.setQuorum(2);
 
