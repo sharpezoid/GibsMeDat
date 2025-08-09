@@ -8,8 +8,9 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-interface ITimelockController {
+interface ITimelockController is IERC165 {
     function getMinDelay() external view returns (uint256);
 
     function hashOperation(
@@ -21,6 +22,8 @@ interface ITimelockController {
     ) external pure returns (bytes32);
 
     function getTimestamp(bytes32 id) external view returns (uint256);
+
+    function hasRole(bytes32 role, address account) external view returns (bool);
 }
 
 /// @title Gibs Me Dat Token
@@ -71,6 +74,9 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
     event MaxTransferAmountUpdated(uint256 amount);
     event TokensRescued(address indexed token, address indexed to, uint256 amount);
 
+    bytes32 private constant TIMELOCK_ADMIN_ROLE = keccak256("TIMELOCK_ADMIN_ROLE");
+    bytes32 private constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");
+
     constructor(address _treasury)
         ERC20("Gibs Me Dat", "GIBS")
         ERC20Permit("Gibs Me Dat")
@@ -110,6 +116,11 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
 
     function _enforceTimelock(address account) internal view {
         require(account.code.length > 0, "treasury not timelock");
+        try IERC165(account).supportsInterface(type(ITimelockController).interfaceId) returns (bool ok) {
+            require(ok, "treasury not timelock");
+        } catch {
+            revert("treasury not timelock");
+        }
         try ITimelockController(account).getMinDelay() returns (uint256 delay) {
             require(delay >= TAX_RAISE_DELAY, "timelock delay too low");
             bytes32 id = ITimelockController(account).hashOperation(
@@ -124,6 +135,14 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
             } catch {
                 revert("treasury not timelock");
             }
+            require(
+                ITimelockController(account).hasRole(TIMELOCK_ADMIN_ROLE, owner()),
+                "owner lacks admin role"
+            );
+            require(
+                ITimelockController(account).hasRole(PROPOSER_ROLE, owner()),
+                "owner lacks proposer role"
+            );
         } catch {
             revert("treasury not timelock");
         }

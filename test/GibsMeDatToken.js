@@ -11,7 +11,11 @@ describe('GibsMeDatToken', function () {
   beforeEach(async function () {
     [owner, addr1, addr2] = await ethers.getSigners();
     const Timelock = await ethers.getContractFactory('TimelockMock');
-    treasury = await Timelock.deploy(MIN_DELAY);
+    treasury = await Timelock.deploy(
+      MIN_DELAY,
+      owner.address,
+      owner.address
+    );
     await treasury.waitForDeployment();
     const Token = await ethers.getContractFactory('GibsMeDatToken');
     token = await Token.deploy(treasury.target);
@@ -20,7 +24,7 @@ describe('GibsMeDatToken', function () {
 
   it('reverts if timelock delay below minimum', async function () {
     const Timelock = await ethers.getContractFactory('TimelockMock');
-    const short = await Timelock.deploy(1);
+    const short = await Timelock.deploy(1, owner.address, owner.address);
     await short.waitForDeployment();
     const Token = await ethers.getContractFactory('GibsMeDatToken');
     await expect(Token.deploy(short.target)).to.be.revertedWith(
@@ -40,11 +44,39 @@ describe('GibsMeDatToken', function () {
 
   it('reverts if timelock has invalid timestamp storage', async function () {
     const Bad = await ethers.getContractFactory('TimelockBadTimestampMock');
-    const bad = await Bad.deploy(MIN_DELAY);
+    const bad = await Bad.deploy(MIN_DELAY, owner.address, owner.address);
     await bad.waitForDeployment();
     const Token = await ethers.getContractFactory('GibsMeDatToken');
     await expect(Token.deploy(bad.target)).to.be.revertedWith(
       'treasury not timelock'
+    );
+  });
+
+  it('reverts if owner lacks admin role in timelock', async function () {
+    const Timelock = await ethers.getContractFactory('TimelockMock');
+    const badRoles = await Timelock.deploy(
+      MIN_DELAY,
+      addr1.address,
+      owner.address
+    );
+    await badRoles.waitForDeployment();
+    const Token = await ethers.getContractFactory('GibsMeDatToken');
+    await expect(Token.deploy(badRoles.target)).to.be.revertedWith(
+      'owner lacks admin role'
+    );
+  });
+
+  it('reverts if owner lacks proposer role in timelock', async function () {
+    const Timelock = await ethers.getContractFactory('TimelockMock');
+    const badRoles = await Timelock.deploy(
+      MIN_DELAY,
+      owner.address,
+      addr1.address
+    );
+    await badRoles.waitForDeployment();
+    const Token = await ethers.getContractFactory('GibsMeDatToken');
+    await expect(Token.deploy(badRoles.target)).to.be.revertedWith(
+      'owner lacks proposer role'
     );
   });
 
@@ -225,7 +257,11 @@ describe('GibsMeDatToken', function () {
     await expect(token.connect(addr1).setTreasury(addr2.address)).to.be
       .reverted;
     const Timelock = await ethers.getContractFactory('TimelockMock');
-    const other = await Timelock.deploy(MIN_DELAY);
+    const other = await Timelock.deploy(
+      MIN_DELAY,
+      owner.address,
+      owner.address
+    );
     await other.waitForDeployment();
     await expect(token.setTreasury(other.target))
       .to.emit(token, 'TreasuryChanged')
