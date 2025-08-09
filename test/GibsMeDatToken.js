@@ -38,6 +38,16 @@ describe('GibsMeDatToken', function () {
     );
   });
 
+  it('reverts if timelock has invalid timestamp storage', async function () {
+    const Bad = await ethers.getContractFactory('TimelockBadTimestampMock');
+    const bad = await Bad.deploy(MIN_DELAY);
+    await bad.waitForDeployment();
+    const Token = await ethers.getContractFactory('GibsMeDatToken');
+    await expect(Token.deploy(bad.target)).to.be.revertedWith(
+      'treasury not timelock'
+    );
+  });
+
   it('deploys with correct initial distribution and event', async function () {
     const total = await token.totalSupply();
     const expectedTotal = ethers.parseUnits('6942080085', 18);
