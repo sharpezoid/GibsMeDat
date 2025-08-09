@@ -79,6 +79,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable,
     bytes32 private constant TIMELOCK_ADMIN_ROLE = keccak256("TIMELOCK_ADMIN_ROLE");
     bytes32 private constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");
 
+    /// @param _treasury Address of the treasury timelock.
     constructor(address _treasury)
         ERC20("Gibs Me Dat", "GIBS")
         ERC20Permit("Gibs Me Dat")
@@ -99,6 +100,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable,
 
     /// @notice Adjust the treasury address. Only Supreme Leader can do this.
     /// @dev The treasury must be governed by a timelock contract.
+    /// @param newTreasury New treasury timelock address.
     function setTreasury(address newTreasury) external onlyOwner {
         require(newTreasury != address(0), "treasury zero");
         _enforceTimelock(newTreasury);
@@ -151,6 +153,9 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable,
     }
 
     /// @notice Update tax rates in basis points.
+    /// @param _reflectionTax Reflection tax in basis points.
+    /// @param _treasuryTax Treasury tax in basis points.
+    /// @param _burnTax Burn tax in basis points.
     function setTaxRates(
         uint256 _reflectionTax,
         uint256 _treasuryTax,
@@ -166,6 +171,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable,
     }
 
     /// @notice Schedule an increase of the max total tax. Takes effect after delay.
+    /// @param amount New max total tax to activate after the delay.
     function scheduleMaxTotalTaxIncrease(uint256 amount) external onlyOwner {
         require(amount <= MAX_TAX_CAP, "max tax too high");
         require(amount > maxTotalTax, "must increase");
@@ -185,6 +191,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable,
 
     /// @notice Set the maximum total tax rate in basis points.
     /// @dev Increases require prior scheduling and timelock expiration.
+    /// @param amount New maximum total tax in basis points.
     function setMaxTotalTax(uint256 amount) external onlyOwner {
         require(amount <= MAX_TAX_CAP, "max tax too high");
         if (amount > maxTotalTax) {
@@ -198,6 +205,8 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable,
     }
 
     /// @notice Whitelist or remove an address from tax and max transfer.
+    /// @param account Address to update.
+    /// @param exempt Whether the address is exempt from tax and transfer limits.
     function setTaxExempt(address account, bool exempt) external onlyOwner {
         if (isTaxExempt[account] != exempt) {
             _updateReflection(account);
@@ -219,6 +228,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable,
     }
 
     /// @notice Set the maximum transfer amount. Zero disables the limit.
+    /// @param amount Maximum amount allowed per transfer.
     function setMaxTransferAmount(uint256 amount) external onlyOwner {
         maxTransferAmount = amount;
         emit MaxTransferAmountUpdated(amount);
@@ -236,6 +246,9 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable,
 
     /// @notice Rescue tokens accidentally sent to this contract.
     /// @dev GIBS tokens reserved for reflections cannot be rescued.
+    /// @param token Address of the token to rescue.
+    /// @param to Recipient of the rescued tokens.
+    /// @param amount Amount of tokens to rescue.
     function rescueTokens(address token, address to, uint256 amount) external onlyOwner nonReentrant {
         require(to != address(0), "to zero");
         if (token == address(this)) {
