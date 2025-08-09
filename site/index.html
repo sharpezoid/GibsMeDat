@@ -25,40 +25,6 @@
       ];
       const expectedChainId = 1; // Ethereum mainnet
 
-      function PolitburoPanel({ holders }) {
-        return React.createElement(
-          'div',
-          { className: 'side-panel' },
-          React.createElement('h3', { className: 'subtitle' }, 'Politburo'),
-          React.createElement(
-            'ul',
-            { className: 'politburo-list' },
-            holders.map((h, idx) =>
-              React.createElement(
-                'li',
-                { key: idx },
-                React.createElement(
-                  'a',
-                  {
-                    href: `https://etherscan.io/address/${h.address}`,
-                    target: '_blank',
-                    rel: 'noopener noreferrer',
-                  },
-                  h.address
-                ),
-                React.createElement(
-                  'div',
-                  { className: 'holder-values' },
-                  React.createElement('span', null, `Manifesto NFTs: ${h.manifesto}`),
-                  React.createElement('span', null, `Redbooks: ${h.redbook}`),
-                  React.createElement('span', null, `$GIBS: ${h.gibs}`)
-                )
-              )
-            )
-          )
-        );
-      }
-
       function MiddlePanel() {
         return React.createElement(
           'div',
@@ -67,35 +33,44 @@
             'h2',
             { className: 'subtitle' },
             '$GIBS – From each according to their bags, to each according to their memes.'
-          ),
-          React.createElement(
-            'p',
-            { className: 'subtitle' },
-            'Because in the meme economy, laughs are legal tender.'
           )
         );
       }
 
       function Navigation() {
         return React.createElement(
-          'nav',
-          { className: 'nav' },
+          'header',
+          { className: 'nav-area' },
+          React.createElement('img', {
+            src: 'images/GibsTokenLogo.png',
+            className: 'nav-logo',
+            alt: 'GIBS logo',
+          }),
           React.createElement(
-            'button',
-            {
-              className: 'nav-button',
-              onClick: () => (window.location.href = 'index.html'),
-            },
-            'Main'
+            'nav',
+            { className: 'nav' },
+            React.createElement(
+              'button',
+              {
+                className: 'nav-button',
+                onClick: () => (window.location.href = 'index.html'),
+              },
+              'Main'
+            ),
+            React.createElement(
+              'button',
+              {
+                className: 'nav-button',
+                onClick: () => (window.location.href = 'manifesto.html'),
+              },
+              'Manifesto'
+            )
           ),
-          React.createElement(
-            'button',
-            {
-              className: 'nav-button',
-              onClick: () => (window.location.href = 'manifesto.html'),
-            },
-            'Manifesto'
-          )
+          React.createElement('img', {
+            src: 'images/GibsTokenLogo.png',
+            className: 'nav-logo mirror',
+            alt: 'GIBS logo mirrored',
+          })
         );
       }
 
@@ -105,27 +80,6 @@
         const [connected, setConnected] = useState(false);
         const [provider, setProvider] = useState(null);
         const [message, setMessage] = useState('');
-        const sampleHolders = [
-          {
-            address: '0x1111111111111111111111111111111111111111',
-            manifesto: 0,
-            redbook: 0,
-            gibs: 0,
-          },
-          {
-            address: '0x2222222222222222222222222222222222222222',
-            manifesto: 0,
-            redbook: 0,
-            gibs: 0,
-          },
-          {
-            address: '0x3333333333333333333333333333333333333333',
-            manifesto: 0,
-            redbook: 0,
-            gibs: 0,
-          },
-        ];
-        const [politburo, setPolitburo] = useState(sampleHolders);
 
         async function loadSupply(currentProvider = provider) {
           try {
@@ -209,8 +163,7 @@
               { className: 'footer' },
               'Stake in the Proletariat Vault, help craft the on-chain Meme Manifesto, and direct the Gibs Treasury DAO.'
             )
-          ),
-          React.createElement(PolitburoPanel, { holders: politburo })
+          )
         );
       }
 
