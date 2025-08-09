@@ -61,6 +61,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
     event TaxRatesUpdated(uint256 reflection, uint256 treasury, uint256 burn);
     event MaxTotalTaxUpdated(uint256 amount);
     event MaxTotalTaxChangeScheduled(uint256 amount, uint256 executeAfter);
+    event MaxTotalTaxChangeCancelled(uint256 amount, uint256 scheduledTime);
     event TaxExemptionUpdated(address indexed account, bool isExempt);
     event MaxTransferAmountUpdated(uint256 amount);
     event TokensRescued(address indexed token, address indexed to, uint256 amount);
@@ -135,6 +136,15 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
         pendingMaxTotalTax = amount;
         maxTotalTaxChangeTime = block.timestamp + TAX_RAISE_DELAY;
         emit MaxTotalTaxChangeScheduled(amount, maxTotalTaxChangeTime);
+    }
+
+    /// @notice Cancel a scheduled increase of the max total tax.
+    function cancelMaxTotalTaxIncrease() external onlyOwner {
+        uint256 amount = pendingMaxTotalTax;
+        uint256 scheduledTime = maxTotalTaxChangeTime;
+        pendingMaxTotalTax = 0;
+        maxTotalTaxChangeTime = 0;
+        emit MaxTotalTaxChangeCancelled(amount, scheduledTime);
     }
 
     /// @notice Set the maximum total tax rate in basis points.
