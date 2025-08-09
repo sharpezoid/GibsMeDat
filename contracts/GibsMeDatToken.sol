@@ -11,6 +11,13 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface ITimelock {
     function getMinDelay() external view returns (uint256);
+    function hashOperation(
+        address target,
+        uint256 value,
+        bytes calldata data,
+        bytes32 predecessor,
+        bytes32 salt
+    ) external pure returns (bytes32);
 }
 
 /// @title Gibs Me Dat Token
@@ -88,7 +95,19 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
     function _enforceTimelock(address account) internal view {
         require(account.code.length > 0, "treasury not timelock");
         try ITimelock(account).getMinDelay() returns (uint256 delay) {
-            require(delay > 0, "treasury not timelock");
+            require(delay >= TAX_RAISE_DELAY, "timelock delay too low");
+            // verify the presence of TimelockController interface
+            try ITimelock(account).hashOperation(
+                address(0),
+                0,
+                "",
+                bytes32(0),
+                bytes32(0)
+            ) returns (bytes32) {
+                // function exists
+            } catch {
+                revert("treasury not timelock");
+            }
         } catch {
             revert("treasury not timelock");
         }

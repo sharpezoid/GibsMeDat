@@ -6,15 +6,36 @@ const { time } = require('@nomicfoundation/hardhat-network-helpers');
 describe('GibsMeDatToken', function () {
   let owner, addr1, addr2, token, treasury;
   const DEAD = '0x000000000000000000000000000000000000dEaD';
+  const MIN_DELAY = 2 * 24 * 60 * 60;
 
   beforeEach(async function () {
     [owner, addr1, addr2] = await ethers.getSigners();
     const Timelock = await ethers.getContractFactory('TimelockMock');
-    treasury = await Timelock.deploy(1);
+    treasury = await Timelock.deploy(MIN_DELAY);
     await treasury.waitForDeployment();
     const Token = await ethers.getContractFactory('GibsMeDatToken');
     token = await Token.deploy(treasury.target);
     await token.waitForDeployment();
+  });
+
+  it('reverts if timelock delay below minimum', async function () {
+    const Timelock = await ethers.getContractFactory('TimelockMock');
+    const short = await Timelock.deploy(1);
+    await short.waitForDeployment();
+    const Token = await ethers.getContractFactory('GibsMeDatToken');
+    await expect(Token.deploy(short.target)).to.be.revertedWith(
+      'timelock delay too low'
+    );
+  });
+
+  it('reverts if timelock lacks controller interface', async function () {
+    const Weak = await ethers.getContractFactory('TimelockNoHashMock');
+    const weak = await Weak.deploy(MIN_DELAY);
+    await weak.waitForDeployment();
+    const Token = await ethers.getContractFactory('GibsMeDatToken');
+    await expect(Token.deploy(weak.target)).to.be.revertedWith(
+      'treasury not timelock'
+    );
   });
 
   it('deploys with correct initial distribution and event', async function () {
@@ -194,7 +215,7 @@ describe('GibsMeDatToken', function () {
     await expect(token.connect(addr1).setTreasury(addr2.address)).to.be
       .reverted;
     const Timelock = await ethers.getContractFactory('TimelockMock');
-    const other = await Timelock.deploy(1);
+    const other = await Timelock.deploy(MIN_DELAY);
     await other.waitForDeployment();
     await expect(token.setTreasury(other.target))
       .to.emit(token, 'TreasuryChanged')
