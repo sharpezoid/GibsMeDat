@@ -28,3 +28,10 @@ These instructions govern the web front-end served from this directory.
 ### Producer & Documentation
 
 - Keep user-facing documentation up to date and ensure content reflects the current UI.
+
+## Checks
+
+Run these commands from this directory after installing dependencies with `npm ci`:
+
+- `npm test` – run unit tests.
+- `npm run lint` – lint the React codebase.
