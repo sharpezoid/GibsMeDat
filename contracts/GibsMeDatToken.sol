@@ -164,7 +164,10 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
         whenNotPaused
     {
         require(
-            maxTransferAmount == 0 || amount <= maxTransferAmount,
+            maxTransferAmount == 0 ||
+                isTaxExempt[sender] ||
+                isTaxExempt[recipient] ||
+                amount <= maxTransferAmount,
             "max transfer exceeded"
         );
 
