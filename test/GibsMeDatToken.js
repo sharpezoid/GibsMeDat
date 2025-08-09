@@ -116,6 +116,27 @@ describe('GibsMeDatToken', function () {
     expect(after).to.be.gt(before);
   });
 
+  it('preserves reflection balance after burn', async function () {
+    const amount = ethers.parseUnits('1000', 18);
+    await token.transfer(addr1.address, amount);
+    await token.transfer(addr2.address, amount); // generates reflection for addr1
+    const ONE = 10n ** 18n;
+    async function claimable(addr) {
+      const bal = await token.balanceOf(addr);
+      const per = await token.reflectionPerToken();
+      const credited = await token.reflectionCredited(addr);
+      const stored = await token.reflectionBalance(addr);
+      const calc = (bal * per) / ONE;
+      const owed = calc > credited ? calc - credited : 0n;
+      return stored + owed;
+    }
+    const before = await claimable(addr1.address);
+    const burnAmt = (await token.balanceOf(addr1.address)) / 2n;
+    await token.connect(addr1).burn(burnAmt);
+    const after = await claimable(addr1.address);
+    expect(after).to.equal(before);
+  });
+
   it('never owes more reflections than it holds', async function () {
     const amount = ethers.parseUnits('1000', 18);
     await token.transfer(addr1.address, amount);
