@@ -52,16 +52,21 @@ describe('ProletariatVault', function () {
     );
   });
 
-  it('burns only one NFT per unstake', async function () {
+  it('mints only one NFT per user and burns all on unstake', async function () {
+    await vault.connect(owner).setStakeParameters(1n, 1n);
     await token.mint(user.address, 200n);
     await token.connect(user).approve(vault.target, 200n);
     await vault.connect(user).stake(1, 10n);
     await vault.connect(user).stake(1, 20n);
-    expect(await vault.balanceOf(user.address, 1n)).to.equal(2n);
+
+    expect(await vault.balanceOf(user.address, 1n)).to.equal(1n);
+    expect(await vault.totalRedBooksMinted()).to.equal(1n);
+    expect(await vault.currentStakeRequirement()).to.equal(2n);
 
     await vault.connect(user).unstake(1);
-    expect(await vault.balanceOf(user.address, 1n)).to.equal(1n);
+    expect(await vault.balanceOf(user.address, 1n)).to.equal(0n);
     expect(await vault.totalRedBooksBurned()).to.equal(1n);
+    expect(await vault.currentStakeRequirement()).to.equal(1n);
   });
 
   it('guards against reentrancy in stake and unstake', async function () {
@@ -99,14 +104,17 @@ describe('ProletariatVault', function () {
     await token.connect(user).approve(vault.target, 100n);
 
     await vault.connect(user).stake(1, 1n);
+    expect(await vault.currentStakeRequirement()).to.equal(2n);
     await expect(vault.connect(user).stake(1, 1n)).to.be.revertedWith(
       'stake below requirement'
     );
     await vault.connect(user).stake(1, 2n);
-    expect(await vault.totalRedBooksMinted()).to.equal(2n);
+    expect(await vault.totalRedBooksMinted()).to.equal(1n);
+    expect(await vault.currentStakeRequirement()).to.equal(2n);
 
     await vault.connect(user).burn(user.address, 1, 1n);
     expect(await vault.totalRedBooksBurned()).to.equal(1n);
+    expect(await vault.currentStakeRequirement()).to.equal(1n);
   });
 
   it('allows only the manifesto to burn without approval', async function () {

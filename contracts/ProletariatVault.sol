@@ -44,14 +44,16 @@ contract ProletariatVault is ERC1155, Ownable, ReentrancyGuard {
     }
 
     /// @notice Compute the current minimum stake requirement.
+    /// @dev "Gentle quadratic" growth based on active Red Book supply
     /// @return minimum amount of GIBS required to stake
     function currentStakeRequirement() public view returns (uint256) {
-        return baseStakeRequirement + stakeRequirementSlope * totalRedBooksMinted;
+        uint256 active = totalRedBooksMinted - totalRedBooksBurned;
+        return baseStakeRequirement + stakeRequirementSlope * active * active;
     }
 
     /// @notice Set parameters controlling the staking requirement.
     /// @param baseRequirement Base GIBS required for staking
-    /// @param slope Incremental cost per Red Book minted
+    /// @param slope Quadratic coefficient applied to active Red Book supply
     function setStakeParameters(uint256 baseRequirement, uint256 slope) external onlyOwner {
         baseStakeRequirement = baseRequirement;
        stakeRequirementSlope = slope;
@@ -99,9 +101,12 @@ contract ProletariatVault is ERC1155, Ownable, ReentrancyGuard {
         s.amount += amount;
         s.startTime = block.timestamp;
 
-        _mint(msg.sender, id, 1, "");
-        if (id == RED_BOOK_ID) {
-            totalRedBooksMinted += 1;
+        // Mint an NFT only if the caller does not already hold one for this id
+        if (balanceOf(msg.sender, id) == 0) {
+            _mint(msg.sender, id, 1, "");
+            if (id == RED_BOOK_ID) {
+                totalRedBooksMinted += 1;
+            }
         }
         emit Staked(msg.sender, id, amount);
     }
@@ -111,7 +116,8 @@ contract ProletariatVault is ERC1155, Ownable, ReentrancyGuard {
     function unstake(uint256 id) external nonReentrant {
         StakeInfo storage s = stakes[id][msg.sender];
         require(s.amount > 0, "nothing staked");
-        require(balanceOf(msg.sender, id) > 0, "no NFT staked");
+        uint256 nftBalance = balanceOf(msg.sender, id);
+        require(nftBalance > 0, "no NFT staked");
 
         s.memeYield += (block.timestamp - s.startTime) * s.amount;
         uint256 amount = s.amount;
@@ -120,10 +126,7 @@ contract ProletariatVault is ERC1155, Ownable, ReentrancyGuard {
         delete stakes[id][msg.sender];
 
         gibs.safeTransfer(msg.sender, amount);
-        _burn(msg.sender, id, 1);
-        if (id == RED_BOOK_ID) {
-            totalRedBooksBurned += 1;
-        }
+        burn(msg.sender, id, nftBalance);
 
         emit Unstaked(msg.sender, id, amount, yield);
     }

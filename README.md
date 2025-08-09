@@ -42,7 +42,7 @@ npm run lint
 `ProletariatVault` enforces a growing minimum stake:
 
 ```
-currentStakeRequirement = baseStakeRequirement + stakeRequirementSlope * totalRedBooksMinted
+currentStakeRequirement = baseStakeRequirement + stakeRequirementSlope * (totalRedBooksMinted - totalRedBooksBurned)^2
 ```
 
 Governance can adjust `baseStakeRequirement` and `stakeRequirementSlope` via `setStakeParameters`.
