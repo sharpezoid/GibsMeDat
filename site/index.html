@@ -48,15 +48,11 @@
                 ),
                 React.createElement(
                   'div',
-                  null,
-                  `Manifesto NFTs: ${h.manifesto}`
-                ),
-                React.createElement(
-                  'div',
-                  null,
-                  `Redbooks: ${h.redbook}`
-                ),
-                React.createElement('div', null, `$GIBS: ${h.gibs}`)
+                  { className: 'holder-values' },
+                  React.createElement('span', null, `Manifesto NFTs: ${h.manifesto}`),
+                  React.createElement('span', null, `Redbooks: ${h.redbook}`),
+                  React.createElement('span', null, `$GIBS: ${h.gibs}`)
+                )
               )
             )
           )
