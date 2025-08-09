@@ -8,7 +8,11 @@ describe('initialDistribution script', function () {
   it('supports dry-run without changing balances', async function () {
     const [owner, recipient] = await ethers.getSigners();
     const Timelock = await ethers.getContractFactory('TimelockMock');
-    const treasury = await Timelock.deploy(MIN_DELAY);
+    const treasury = await Timelock.deploy(
+      MIN_DELAY,
+      owner.address,
+      owner.address
+    );
     await treasury.waitForDeployment();
     const Token = await ethers.getContractFactory('GibsMeDatToken');
     const token = await Token.deploy(treasury.target);
@@ -25,9 +29,13 @@ describe('initialDistribution script', function () {
   });
 
   it('transfers tokens when not a dry run', async function () {
-    const [, recipient] = await ethers.getSigners();
+    const [owner, recipient] = await ethers.getSigners();
     const Timelock = await ethers.getContractFactory('TimelockMock');
-    const treasury = await Timelock.deploy(MIN_DELAY);
+    const treasury = await Timelock.deploy(
+      MIN_DELAY,
+      owner.address,
+      owner.address
+    );
     await treasury.waitForDeployment();
     const Token = await ethers.getContractFactory('GibsMeDatToken');
     const token = await Token.deploy(treasury.target);
