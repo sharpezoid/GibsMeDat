@@ -9,6 +9,10 @@ Satirical meme ecosystem consisting of:
 
 Static page located in `site/` can be deployed to [Fleek](https://fleek.co) for decentralised hosting. The root-level `index.html` simply redirects to this folder so that a default page is served when Fleek points to the repository root.
 
+## Governance
+
+The treasury is controlled by an on-chain timelock. `GibsMeDatToken` enforces that the treasury address is a contract implementing `getMinDelay()`, typically an OpenZeppelin `TimelockController`. This delay gives comrades time to review withdrawals before execution.
+
 ## Front-end checks
 
 From `site/`, install dependencies and run:

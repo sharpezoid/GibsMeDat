@@ -3,13 +3,16 @@ const { ethers } = require('hardhat');
 const { anyValue } = require('@nomicfoundation/hardhat-chai-matchers/withArgs');
 
 describe('GibsMeDatToken', function () {
-  let owner, treasury, addr1, addr2, token;
+  let owner, addr1, addr2, token, treasury;
   const DEAD = '0x000000000000000000000000000000000000dEaD';
 
   beforeEach(async function () {
-    [owner, treasury, addr1, addr2] = await ethers.getSigners();
+    [owner, addr1, addr2] = await ethers.getSigners();
+    const Timelock = await ethers.getContractFactory('TimelockMock');
+    treasury = await Timelock.deploy(1);
+    await treasury.waitForDeployment();
     const Token = await ethers.getContractFactory('GibsMeDatToken');
-    token = await Token.deploy(treasury.address);
+    token = await Token.deploy(treasury.target);
     await token.waitForDeployment();
   });
 
@@ -19,7 +22,7 @@ describe('GibsMeDatToken', function () {
     expect(total).to.equal(expectedTotal);
 
     const deadBal = await token.balanceOf(DEAD);
-    const treasuryBal = await token.balanceOf(treasury.address);
+    const treasuryBal = await token.balanceOf(treasury.target);
     expect(deadBal).to.equal((expectedTotal * 10n) / 100n);
     expect(treasuryBal).to.equal((expectedTotal * 5n) / 100n);
 
@@ -31,7 +34,7 @@ describe('GibsMeDatToken', function () {
 
   it('applies transfer tax and emits events', async function () {
     const amount = ethers.parseUnits('1000', 18);
-    const treasuryInitial = await token.balanceOf(treasury.address);
+    const treasuryInitial = await token.balanceOf(treasury.target);
     const deadInitial = await token.balanceOf(DEAD);
     const tx = await token.transfer(addr1.address, amount);
     const reflectionFee = (amount * 30n) / 10000n;
@@ -54,7 +57,7 @@ describe('GibsMeDatToken', function () {
     const received = await token.balanceOf(addr1.address);
     expect(received).to.equal(amount - fee);
     const treasuryDelta =
-      (await token.balanceOf(treasury.address)) - treasuryInitial;
+      (await token.balanceOf(treasury.target)) - treasuryInitial;
     expect(treasuryDelta).to.equal(treasuryFee);
     const deadDelta = (await token.balanceOf(DEAD)) - deadInitial;
     expect(deadDelta).to.equal(burnFee);
@@ -64,7 +67,7 @@ describe('GibsMeDatToken', function () {
     const amounts = [145n, 9999n];
     for (const amt of amounts) {
       const prevRecipient = await token.balanceOf(addr1.address);
-      const prevTreasury = await token.balanceOf(treasury.address);
+      const prevTreasury = await token.balanceOf(treasury.target);
       const prevDead = await token.balanceOf(DEAD);
       const prevContract = await token.balanceOf(token.target);
 
@@ -92,7 +95,7 @@ describe('GibsMeDatToken', function () {
       const newRecipient = await token.balanceOf(addr1.address);
       expect(newRecipient - prevRecipient).to.equal(amt - fee);
 
-      const newTreasury = await token.balanceOf(treasury.address);
+      const newTreasury = await token.balanceOf(treasury.target);
       expect(newTreasury - prevTreasury).to.equal(treasuryFee);
 
       const newDead = await token.balanceOf(DEAD);
@@ -165,14 +168,16 @@ describe('GibsMeDatToken', function () {
   it('only owner can set treasury', async function () {
     await expect(token.connect(addr1).setTreasury(addr2.address)).to.be
       .reverted;
-    await expect(token.setTreasury(addr2.address))
-      .to.emit(token, 'TreasuryChanged')
-      .withArgs(treasury.address, addr2.address);
-    const Token = await ethers.getContractFactory('GibsMeDatToken');
-    const other = await Token.deploy(addr1.address);
+    const Timelock = await ethers.getContractFactory('TimelockMock');
+    const other = await Timelock.deploy(1);
     await other.waitForDeployment();
-    await expect(token.setTreasury(other.target)).to.be.revertedWith(
-      'treasury contract'
+    await expect(token.setTreasury(other.target))
+      .to.emit(token, 'TreasuryChanged')
+      .withArgs(treasury.target, other.target);
+    await expect(token.setTreasury(addr2.address)).to.be.reverted;
+    const Token = await ethers.getContractFactory('GibsMeDatToken');
+    await expect(Token.deploy(addr1.address)).to.be.revertedWith(
+      'treasury not timelock'
     );
   });
 
