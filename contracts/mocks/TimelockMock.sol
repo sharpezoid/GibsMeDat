@@ -16,4 +16,15 @@ contract TimelockMock {
     function getMinDelay() external view returns (uint256) {
         return minDelay;
     }
+
+    /// @notice Mimic TimelockController's hashOperation.
+    function hashOperation(
+        address target,
+        uint256 value,
+        bytes calldata data,
+        bytes32 predecessor,
+        bytes32 salt
+    ) external pure returns (bytes32) {
+        return keccak256(abi.encode(target, value, keccak256(data), predecessor, salt));
+    }
 }
