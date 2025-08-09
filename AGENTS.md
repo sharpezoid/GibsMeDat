@@ -11,6 +11,7 @@ This repository uses **AGENTS.md** files to document contributor responsibilitie
   - `npm test` for JavaScript/React code.
   - `npm run lint` where a linter is configured.
 - Document architectural or economic decisions in the repository.
+- Prefer multisig or DAO-controlled ownership (e.g., `GibsTreasuryDAO`) for administrative functions and document any DAO proposal that executes owner-only calls. Renounce ownership after migration when feasible.
 
 ## Roles
 

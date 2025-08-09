@@ -14,8 +14,9 @@ contract GibsTreasuryDAO is Ownable {
 
     struct Proposal {
         address proposer;
-        address payable recipient;
-        uint256 amount;
+        address target;
+        uint256 value;
+        bytes data;
         uint256 votesFor;
         uint256 votesAgainst;
         uint256 deadline;
@@ -26,7 +27,7 @@ contract GibsTreasuryDAO is Ownable {
     mapping(uint256 => Proposal) public proposals;
     mapping(uint256 => mapping(address => bool)) public voted;
 
-    event ProposalCreated(uint256 indexed id, address indexed proposer, address indexed recipient, uint256 amount);
+    event ProposalCreated(uint256 indexed id, address indexed proposer, address indexed target, uint256 value, bytes data);
     event Voted(uint256 indexed id, address indexed comrade, bool support, uint256 weight);
     event Executed(uint256 indexed id, bool passed);
     event QuorumUpdated(uint256 newQuorum);
@@ -42,20 +43,21 @@ contract GibsTreasuryDAO is Ownable {
         emit QuorumUpdated(_quorum);
     }
 
-    /// @notice Create proposal to fund a comrade or meme endeavour.
-    function propose(address payable recipient, uint256 amount) external returns (uint256 id) {
-        require(address(this).balance >= amount, "insufficient treasury");
+    /// @notice Create proposal to call a target with optional ETH value.
+    function propose(address target, uint256 value, bytes calldata data) external returns (uint256 id) {
+        require(target != address(0), "target zero");
         id = ++proposalCount;
         proposals[id] = Proposal({
             proposer: msg.sender,
-            recipient: recipient,
-            amount: amount,
+            target: target,
+            value: value,
+            data: data,
             votesFor: 0,
             votesAgainst: 0,
             deadline: block.timestamp + 3 days,
             executed: false
         });
-        emit ProposalCreated(id, msg.sender, recipient, amount);
+        emit ProposalCreated(id, msg.sender, target, value, data);
     }
 
     /// @notice Vote for or against a proposal using RedBook NFTs as power.
@@ -81,8 +83,8 @@ contract GibsTreasuryDAO is Ownable {
         require(!p.executed, "executed");
         p.executed = true;
         bool passed = p.votesFor + p.votesAgainst >= quorum && p.votesFor > p.votesAgainst;
-        if (passed && address(this).balance >= p.amount) {
-            Address.sendValue(p.recipient, p.amount);
+        if (passed) {
+            Address.functionCallWithValue(p.target, p.data, p.value);
         }
         emit Executed(id, passed);
     }
