@@ -7,7 +7,7 @@ html {
   background-repeat: no-repeat;
   background-position: top center;
   background-attachment: fixed;
-  background-size: auto;
+  background-size: 100% auto;
   color: #ffeedd;
   font-family: 'Comic Sans MS', 'Comic Sans', sans-serif;
 }
