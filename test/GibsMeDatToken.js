@@ -374,6 +374,42 @@ describe('GibsMeDatToken', function () {
     expect(await nr.balanceOf(owner.address)).to.equal(50n);
   });
 
+  it('blocks reentrant rescueTokens calls', async function () {
+    const Reentrant = await ethers.getContractFactory('ReentrantToken');
+    const rt = await Reentrant.deploy(token.target);
+    await rt.waitForDeployment();
+    const Attacker = await ethers.getContractFactory(
+      'RescueTokensReentrancyAttacker'
+    );
+    const attacker = await Attacker.deploy(token.target, rt.target);
+    await attacker.waitForDeployment();
+    await token.transferOwnership(attacker.target);
+    await rt.setAttacker(attacker.target);
+    await rt.mint(token.target, 1n);
+    await rt.setAction(1); // Action.Rescue
+    await expect(attacker.attack(1n)).to.be.revertedWith(
+      'ReentrancyGuard: reentrant call'
+    );
+  });
+
+  it('blocks reentrant claimReflection calls', async function () {
+    const Reentrant = await ethers.getContractFactory('ReentrantToken');
+    const rt = await Reentrant.deploy(token.target);
+    await rt.waitForDeployment();
+    const Attacker = await ethers.getContractFactory(
+      'RescueTokensReentrancyAttacker'
+    );
+    const attacker = await Attacker.deploy(token.target, rt.target);
+    await attacker.waitForDeployment();
+    await token.transferOwnership(attacker.target);
+    await rt.setAttacker(attacker.target);
+    await rt.mint(token.target, 1n);
+    await rt.setAction(2); // Action.Claim
+    await expect(attacker.attack(1n)).to.be.revertedWith(
+      'ReentrancyGuard: reentrant call'
+    );
+  });
+
   it('transfers ownership to a governance contract', async function () {
     const RedBook = await ethers.getContractFactory('MockRedBook');
     const red = await RedBook.deploy();
