@@ -37,7 +37,7 @@ These instructions apply to all Solidity contracts and related tests within this
 ## Tokenomics Parameters
 
 - `ProletariatVault` stake requirement:
-  `baseStakeRequirement + stakeRequirementSlope * totalRedBooksMinted`.
+  `baseStakeRequirement + stakeRequirementSlope * (totalRedBooksMinted - totalRedBooksBurned)^2`.
 - `MemeManifesto` page cost:
   `basePageCost + pageCostSlope * currentPageCount`.
 - Governance may update these values through the respective setter functions.
