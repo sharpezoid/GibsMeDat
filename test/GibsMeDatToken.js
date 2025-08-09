@@ -273,6 +273,19 @@ describe('GibsMeDatToken', function () {
     );
   });
 
+  it('cancels a scheduled max total tax increase', async function () {
+    await token.setMaxTotalTax(400);
+    await token.scheduleMaxTotalTaxIncrease(450);
+    await expect(token.cancelMaxTotalTaxIncrease())
+      .to.emit(token, 'MaxTotalTaxChangeCancelled')
+      .withArgs(450, anyValue);
+    expect(await token.pendingMaxTotalTax()).to.equal(0n);
+    expect(await token.maxTotalTaxChangeTime()).to.equal(0n);
+    await expect(token.setMaxTotalTax(450)).to.be.revertedWith(
+      'amount not scheduled'
+    );
+  });
+
   it('pauses and unpauses transfers', async function () {
     await token.pause();
     await expect(token.transfer(addr1.address, 1n)).to.be.revertedWith(
