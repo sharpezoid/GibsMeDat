@@ -23,6 +23,7 @@
         'function pageCount() view returns (uint256)',
         'function pages(uint256) view returns (string)',
       ];
+      const expectedChainId = 1; // Ethereum mainnet
 
       function StakePanel() {
         return React.createElement(
@@ -44,11 +45,20 @@
 
       function App() {
         const [pages, setPages] = useState([]);
+        const [message, setMessage] = useState('');
 
         async function loadPages() {
           try {
-            if (!window.ethereum) return;
+            if (!window.ethereum) {
+              setMessage('No Ethereum provider detected. Please install MetaMask.');
+              return;
+            }
             const provider = new ethers.BrowserProvider(window.ethereum);
+            const network = await provider.getNetwork();
+            if (network.chainId !== expectedChainId) {
+              setMessage('Please switch to the Ethereum mainnet.');
+              return;
+            }
             const contract = new ethers.Contract(
               manifestoAddress,
               manifestoAbi,
@@ -60,8 +70,9 @@
               loaded.push(await contract.pages(i));
             }
             setPages(loaded);
+            setMessage('');
           } catch (err) {
-            console.error(err);
+            setMessage(`Error loading manifesto: ${err.message}`);
           }
         }
 
@@ -89,7 +100,13 @@
               'ol',
               { className: 'stats' },
               pages.map((p, idx) => React.createElement('li', { key: idx }, p))
-            )
+            ),
+            message &&
+              React.createElement(
+                'p',
+                { className: 'error' },
+                message
+              )
           ),
           React.createElement(StakePanel)
         );
