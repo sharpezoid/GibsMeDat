@@ -1,6 +1,7 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const { anyValue } = require('@nomicfoundation/hardhat-chai-matchers/withArgs');
+const { time } = require('@nomicfoundation/hardhat-network-helpers');
 
 describe('GibsMeDatToken', function () {
   let owner, addr1, addr2, token, treasury;
@@ -193,18 +194,37 @@ describe('GibsMeDatToken', function () {
     expect(received2).to.equal(amount);
   });
 
-  it('enforces configurable maximum total tax rate', async function () {
+  it('enforces configurable maximum total tax rate with timelocked increases', async function () {
     await expect(token.setTaxRates(300, 300, 0)).to.be.revertedWith(
       'tax too high'
     );
     await expect(token.setTaxRates(200, 300, 0)).to.not.be.reverted;
-    await expect(token.setMaxTotalTax(700)).to.not.be.reverted;
-    await expect(token.setTaxRates(400, 300, 0)).to.not.be.reverted;
-    await expect(token.setTaxRates(401, 300, 0)).to.be.revertedWith(
+
+    await token.setMaxTotalTax(400);
+    await expect(token.setTaxRates(300, 100, 0)).to.not.be.reverted;
+    await expect(token.setTaxRates(300, 101, 0)).to.be.revertedWith(
       'tax too high'
     );
-    await expect(token.setMaxTotalTax(10001)).to.be.revertedWith(
+
+    await expect(token.setMaxTotalTax(501)).to.be.revertedWith(
       'max tax too high'
+    );
+    await expect(token.scheduleMaxTotalTaxIncrease(501)).to.be.revertedWith(
+      'max tax too high'
+    );
+
+    await token.scheduleMaxTotalTaxIncrease(450);
+    await expect(token.setMaxTotalTax(450)).to.be.revertedWith(
+      'timelock active'
+    );
+    await time.increase(2 * 24 * 60 * 60);
+    await expect(token.setMaxTotalTax(450))
+      .to.emit(token, 'MaxTotalTaxUpdated')
+      .withArgs(450);
+
+    await expect(token.setTaxRates(400, 50, 0)).to.not.be.reverted;
+    await expect(token.setTaxRates(401, 50, 0)).to.be.revertedWith(
+      'tax too high'
     );
   });
 

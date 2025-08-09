@@ -26,6 +26,10 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
     uint256 public treasuryTax = 30; // 0.3%
     uint256 public burnTax = 9;      // 0.09%
     uint256 public maxTotalTax = 500; // 5%
+    uint256 public constant MAX_TAX_CAP = 500; // absolute ceiling
+    uint256 public constant TAX_RAISE_DELAY = 2 days;
+    uint256 public pendingMaxTotalTax;
+    uint256 public maxTotalTaxChangeTime;
 
     address public treasury; // Treasury wallet controlled by comrades
     address public constant DEAD = address(0xdead);
@@ -49,6 +53,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
     event ReflectionClaimed(address indexed comrade, uint256 amount);
     event TaxRatesUpdated(uint256 reflection, uint256 treasury, uint256 burn);
     event MaxTotalTaxUpdated(uint256 amount);
+    event MaxTotalTaxChangeScheduled(uint256 amount, uint256 executeAfter);
     event TaxExemptionUpdated(address indexed account, bool isExempt);
     event MaxTransferAmountUpdated(uint256 amount);
     event TokensRescued(address indexed token, address indexed to, uint256 amount);
@@ -104,9 +109,25 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
         emit TaxRatesUpdated(_reflectionTax, _treasuryTax, _burnTax);
     }
 
+    /// @notice Schedule an increase of the max total tax. Takes effect after delay.
+    function scheduleMaxTotalTaxIncrease(uint256 amount) external onlyOwner {
+        require(amount <= MAX_TAX_CAP, "max tax too high");
+        require(amount > maxTotalTax, "must increase");
+        pendingMaxTotalTax = amount;
+        maxTotalTaxChangeTime = block.timestamp + TAX_RAISE_DELAY;
+        emit MaxTotalTaxChangeScheduled(amount, maxTotalTaxChangeTime);
+    }
+
     /// @notice Set the maximum total tax rate in basis points.
+    /// @dev Increases require prior scheduling and timelock expiration.
     function setMaxTotalTax(uint256 amount) external onlyOwner {
-        require(amount <= TAX_DENOMINATOR, "max tax too high");
+        require(amount <= MAX_TAX_CAP, "max tax too high");
+        if (amount > maxTotalTax) {
+            require(amount == pendingMaxTotalTax, "amount not scheduled");
+            require(block.timestamp >= maxTotalTaxChangeTime, "timelock active");
+            pendingMaxTotalTax = 0;
+            maxTotalTaxChangeTime = 0;
+        }
         maxTotalTax = amount;
         emit MaxTotalTaxUpdated(amount);
     }
