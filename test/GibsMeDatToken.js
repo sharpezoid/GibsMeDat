@@ -234,6 +234,14 @@ describe('GibsMeDatToken', function () {
     expect(await nr.balanceOf(owner.address)).to.equal(50n);
   });
 
+  it('reverts rescuing owed reflections', async function () {
+    const amount = ethers.parseUnits('1000', 18);
+    await token.transfer(addr1.address, amount);
+    await expect(
+      token.rescueTokens(token.target, owner.address, 1n)
+    ).to.be.revertedWith('reflection owed');
+  });
+
   it('allows approvals via permit', async function () {
     const value = ethers.parseUnits('100', 18);
     const nonce = await token.nonces(owner.address);

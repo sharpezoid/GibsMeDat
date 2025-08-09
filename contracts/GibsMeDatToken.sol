@@ -30,6 +30,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
     mapping(address => uint256) public reflectionCredited;
     mapping(address => uint256) public reflectionBalance;
     mapping(address => bool) public isTaxExempt;
+    uint256 public totalPendingReflection;
 
     uint256 public maxTransferAmount;
 
@@ -110,9 +111,12 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
     }
 
     /// @notice Rescue tokens accidentally sent to this contract.
+    /// @dev GIBS tokens reserved for reflections cannot be rescued.
     function rescueTokens(address token, address to, uint256 amount) external onlyOwner {
         require(to != address(0), "to zero");
         if (token == address(this)) {
+            uint256 available = balanceOf(address(this)) - totalPendingReflection;
+            require(amount <= available, "reflection owed");
             super._transfer(address(this), to, amount);
         } else {
             IERC20(token).safeTransfer(to, amount);
@@ -126,6 +130,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
         uint256 amount = reflectionBalance[msg.sender];
         require(amount > 0, "nothing to claim");
         reflectionBalance[msg.sender] = 0;
+        totalPendingReflection -= amount;
         super._transfer(address(this), msg.sender, amount);
         emit ReflectionClaimed(msg.sender, amount);
     }
@@ -216,6 +221,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
             if (reflectionFee > 0) {
                 super._transfer(sender, address(this), reflectionFee);
                 _distributeReflection(reflectionFee);
+                totalPendingReflection += reflectionFee;
                 emit ComradeReward(reflectionFee);
             }
 
