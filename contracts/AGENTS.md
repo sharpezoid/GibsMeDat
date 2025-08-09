@@ -13,6 +13,7 @@ These instructions apply to all Solidity contracts and related tests within this
 - Before committing, run:
   - `npx hardhat compile`
   - `npx hardhat test`
+- Route administrative powers through multisig or DAO contracts such as `GibsTreasuryDAO`. Document proposals that transfer or renounce ownership after migration.
 
 ### Security Auditor
 

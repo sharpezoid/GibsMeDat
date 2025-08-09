@@ -39,6 +39,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
     uint256 public maxTotalTaxChangeTime;
 
     address public treasury; // Treasury wallet controlled by comrades
+    address public governance; // Governance contract managing owner functions
     address public constant DEAD = address(0xdead);
 
     // Reflection accounting using a dividend-like model
@@ -51,6 +52,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
     uint256 public maxTransferAmount;
 
     event TreasuryChanged(address indexed previous, address indexed current);
+    event GovernanceTransferred(address indexed previous, address indexed current);
     event ComradeReward(uint256 amount);
     event GloriousContribution(uint256 amount);
     event ToGulag(uint256 amount);
@@ -91,6 +93,16 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
         _enforceTimelock(newTreasury);
         emit TreasuryChanged(treasury, newTreasury);
         treasury = newTreasury;
+    }
+
+    /// @notice Hand control of owner functions to a governance contract.
+    /// @param newGovernance Address of the `GibsTreasuryDAO` or multisig.
+    function setGovernance(address newGovernance) external onlyOwner {
+        require(newGovernance != address(0), "governance zero");
+        require(newGovernance.code.length > 0, "governance not contract");
+        emit GovernanceTransferred(governance, newGovernance);
+        governance = newGovernance;
+        transferOwnership(newGovernance);
     }
 
     function _enforceTimelock(address account) internal view {

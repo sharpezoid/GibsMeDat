@@ -332,6 +332,56 @@ describe('GibsMeDatToken', function () {
     expect(await nr.balanceOf(owner.address)).to.equal(50n);
   });
 
+  it('transfers ownership to a governance contract', async function () {
+    const RedBook = await ethers.getContractFactory('MockRedBook');
+    const red = await RedBook.deploy();
+    await red.waitForDeployment();
+    const Dao = await ethers.getContractFactory('GibsTreasuryDAO');
+    const dao = await Dao.deploy(red.target);
+    await dao.waitForDeployment();
+    await expect(token.setGovernance(dao.target))
+      .to.emit(token, 'GovernanceTransferred')
+      .withArgs(ethers.ZeroAddress, dao.target);
+    expect(await token.owner()).to.equal(dao.target);
+    await expect(token.setMaxTransferAmount(1n)).to.be.revertedWith(
+      'Ownable: caller is not the owner'
+    );
+  });
+
+  it('allows governance DAO to execute owner calls and renounce ownership', async function () {
+    const RedBook = await ethers.getContractFactory('MockRedBook');
+    const red = await RedBook.deploy();
+    await red.waitForDeployment();
+    await red.mint(owner.address, 1, 1);
+    await red.mint(addr1.address, 1, 1);
+
+    const Dao = await ethers.getContractFactory('GibsTreasuryDAO');
+    const dao = await Dao.deploy(red.target);
+    await dao.waitForDeployment();
+    await dao.setQuorum(2);
+
+    await token.setGovernance(dao.target);
+
+    const pauseData = token.interface.encodeFunctionData('pause');
+    await dao.propose(token.target, 0, pauseData);
+    const id1 = await dao.proposalCount();
+    await dao.vote(id1, true);
+    await dao.connect(addr1).vote(id1, true);
+    await time.increase(3 * 24 * 60 * 60);
+    await dao.execute(id1);
+    expect(await token.paused()).to.equal(true);
+
+    const renounceData =
+      token.interface.encodeFunctionData('renounceOwnership');
+    await dao.propose(token.target, 0, renounceData);
+    const id2 = await dao.proposalCount();
+    await dao.vote(id2, true);
+    await dao.connect(addr1).vote(id2, true);
+    await time.increase(3 * 24 * 60 * 60);
+    await dao.execute(id2);
+    expect(await token.owner()).to.equal(ethers.ZeroAddress);
+  });
+
   it('reverts rescuing owed reflections', async function () {
     const amount = ethers.parseUnits('1000', 18);
     await token.transfer(addr1.address, amount);
