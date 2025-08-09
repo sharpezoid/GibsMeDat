@@ -39,6 +39,7 @@ contract ProletariatVault is ERC1155, Ownable, ReentrancyGuard {
     event MemeManifestoUpdated(address manifesto);
 
     constructor(address token) ERC1155("") {
+        require(token != address(0), "token address zero");
         gibs = IERC20(token);
     }
 
