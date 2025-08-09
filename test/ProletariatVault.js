@@ -14,6 +14,13 @@ describe('ProletariatVault', function () {
     await vault.waitForDeployment();
   });
 
+  it('reverts when token address is zero', async function () {
+    const Vault = await ethers.getContractFactory('ProletariatVault');
+    await expect(Vault.deploy(ethers.ZeroAddress)).to.be.revertedWith(
+      'token address zero'
+    );
+  });
+
   it('allows staking and accrues yield over time', async function () {
     await token.mint(user.address, 100n);
     await token.connect(user).approve(vault.target, 100n);
