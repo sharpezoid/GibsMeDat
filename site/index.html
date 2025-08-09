@@ -80,6 +80,29 @@
         );
       }
 
+      function Navigation() {
+        return React.createElement(
+          'nav',
+          { className: 'nav' },
+          React.createElement(
+            'button',
+            {
+              className: 'nav-button',
+              onClick: () => (window.location.href = 'index.html'),
+            },
+            'Main'
+          ),
+          React.createElement(
+            'button',
+            {
+              className: 'nav-button',
+              onClick: () => (window.location.href = 'manifesto.html'),
+            },
+            'Manifesto'
+          )
+        );
+      }
+
       function App() {
         const [supply, setSupply] = useState('6,942,080,085');
         const [gulaged, setGulaged] = useState('0');
@@ -158,6 +181,7 @@
         return React.createElement(
           React.Fragment,
           null,
+          React.createElement(Navigation),
           React.createElement(
             'main',
             { className: 'container' },
@@ -188,11 +212,6 @@
               'p',
               { className: 'footer' },
               'Stake in the Proletariat Vault, help craft the on-chain Meme Manifesto, and direct the Gibs Treasury DAO.'
-            ),
-            React.createElement(
-              'a',
-              { href: 'manifesto.html', className: 'footer' },
-              'Read the Meme Manifesto'
             )
           ),
           React.createElement(PolitburoPanel, { holders: politburo })
