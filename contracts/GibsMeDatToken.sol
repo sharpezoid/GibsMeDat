@@ -242,6 +242,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
     function _beforeTokenTransfer(address from, address to, uint256 amount)
         internal
         override
+        whenNotPaused
     {
         if (to == address(0)) {
             _updateReflection(from);
@@ -263,7 +264,6 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
     function _transfer(address sender, address recipient, uint256 amount)
         internal
         override
-        whenNotPaused
     {
         require(
             maxTransferAmount == 0 ||
