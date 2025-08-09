@@ -33,6 +33,30 @@ describe('ProletariatVault', function () {
     expect(await vault.totalRedBooksBurned()).to.equal(1n);
   });
 
+  it('requires holding the NFT to unstake', async function () {
+    await token.mint(user.address, 100n);
+    await token.connect(user).approve(vault.target, 100n);
+    await vault.connect(user).stake(1, 10n);
+    await vault
+      .connect(user)
+      .safeTransferFrom(user.address, owner.address, 1, 1, '0x');
+    await expect(vault.connect(user).unstake(1)).to.be.revertedWith(
+      'no NFT staked'
+    );
+  });
+
+  it('burns only one NFT per unstake', async function () {
+    await token.mint(user.address, 200n);
+    await token.connect(user).approve(vault.target, 200n);
+    await vault.connect(user).stake(1, 10n);
+    await vault.connect(user).stake(1, 20n);
+    expect(await vault.balanceOf(user.address, 1n)).to.equal(2n);
+
+    await vault.connect(user).unstake(1);
+    expect(await vault.balanceOf(user.address, 1n)).to.equal(1n);
+    expect(await vault.totalRedBooksBurned()).to.equal(1n);
+  });
+
   it('guards against reentrancy in stake and unstake', async function () {
     const Attacker = await ethers.getContractFactory('ReentrancyAttacker');
     const attacker = await Attacker.deploy(vault.target);

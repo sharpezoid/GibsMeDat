@@ -106,9 +106,11 @@ contract ProletariatVault is ERC1155, Ownable, ReentrancyGuard {
     }
 
     /// @notice Withdraw staked GIBS and harvest meme yield.
+    /// @param id Vault identifier to unstake from
     function unstake(uint256 id) external nonReentrant {
         StakeInfo storage s = stakes[id][msg.sender];
         require(s.amount > 0, "nothing staked");
+        require(balanceOf(msg.sender, id) > 0, "no NFT staked");
 
         s.memeYield += (block.timestamp - s.startTime) * s.amount;
         uint256 amount = s.amount;
@@ -117,10 +119,9 @@ contract ProletariatVault is ERC1155, Ownable, ReentrancyGuard {
         delete stakes[id][msg.sender];
 
         gibs.safeTransfer(msg.sender, amount);
-        uint256 balance = balanceOf(msg.sender, id);
-        _burn(msg.sender, id, balance);
+        _burn(msg.sender, id, 1);
         if (id == RED_BOOK_ID) {
-            totalRedBooksBurned += balance;
+            totalRedBooksBurned += 1;
         }
 
         emit Unstaked(msg.sender, id, amount, yield);
