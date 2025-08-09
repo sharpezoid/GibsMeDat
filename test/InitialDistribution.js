@@ -5,8 +5,11 @@ const { ethers } = require('hardhat');
 describe('initialDistribution script', function () {
   it('supports dry-run without changing balances', async function () {
     const [owner, recipient] = await ethers.getSigners();
+    const Timelock = await ethers.getContractFactory('TimelockMock');
+    const treasury = await Timelock.deploy(1);
+    await treasury.waitForDeployment();
     const Token = await ethers.getContractFactory('GibsMeDatToken');
-    const token = await Token.deploy(owner.address);
+    const token = await Token.deploy(treasury.target);
     await token.waitForDeployment();
 
     const recipients = [{ address: recipient.address, amount: 100 }];
@@ -20,9 +23,12 @@ describe('initialDistribution script', function () {
   });
 
   it('transfers tokens when not a dry run', async function () {
-    const [owner, recipient] = await ethers.getSigners();
+    const [, recipient] = await ethers.getSigners();
+    const Timelock = await ethers.getContractFactory('TimelockMock');
+    const treasury = await Timelock.deploy(1);
+    await treasury.waitForDeployment();
     const Token = await ethers.getContractFactory('GibsMeDatToken');
-    const token = await Token.deploy(owner.address);
+    const token = await Token.deploy(treasury.target);
     await token.waitForDeployment();
 
     const recipients = [{ address: recipient.address, amount: 50 }];

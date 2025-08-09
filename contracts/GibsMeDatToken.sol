@@ -9,6 +9,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+interface ITimelock {
+    function getMinDelay() external view returns (uint256);
+}
+
 /// @title Gibs Me Dat Token
 /// @notice Satirical meme token of the people. Features a 0.69% transfer tax
 /// that redistributes wealth, funds the treasury, and sends some to the Gulag.
@@ -54,7 +58,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
         ERC20Permit("Gibs Me Dat")
     {
         require(_treasury != address(0), "treasury zero");
-        require(_treasury.code.length == 0, "treasury contract");
+        _enforceTimelock(_treasury);
         treasury = _treasury;
         _mint(msg.sender, INITIAL_SUPPLY);
         // Initial Gulag burn of 10%
@@ -68,11 +72,21 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
     }
 
     /// @notice Adjust the treasury address. Only Supreme Leader can do this.
+    /// @dev The treasury must be governed by a timelock contract.
     function setTreasury(address newTreasury) external onlyOwner {
         require(newTreasury != address(0), "treasury zero");
-        require(newTreasury.code.length == 0, "treasury contract");
+        _enforceTimelock(newTreasury);
         emit TreasuryChanged(treasury, newTreasury);
         treasury = newTreasury;
+    }
+
+    function _enforceTimelock(address account) internal view {
+        require(account.code.length > 0, "treasury not timelock");
+        try ITimelock(account).getMinDelay() returns (uint256 delay) {
+            require(delay > 0, "treasury not timelock");
+        } catch {
+            revert("treasury not timelock");
+        }
     }
 
     /// @notice Update tax rates in basis points.
