@@ -13,6 +13,18 @@ Static page located in `site/` can be deployed to [Fleek](https://fleek.co) for 
 
 The treasury is controlled by an on-chain timelock. `GibsMeDatToken` enforces that the treasury address is a contract implementing `getMinDelay()`, typically an OpenZeppelin `TimelockController`. This delay gives comrades time to review withdrawals before execution.
 
+## Owner-adjustable parameters
+
+The Supreme Leader (token owner) can modify several parameters in `GibsMeDatToken.sol`. Changes to these values can affect fees, transfer limits, and overall holder experience.
+
+- **Transfer taxes** – [`setTaxRates(uint256 _reflectionTax, uint256 _treasuryTax, uint256 _burnTax)`](contracts/GibsMeDatToken.sol#L117-L130) adjusts how the transfer tax is split between reflections, the treasury, and burns. The sum updates `transferTax`, altering the fee paid on each transfer.
+- **Max total tax** – [`scheduleMaxTotalTaxIncrease(uint256 amount)`](contracts/GibsMeDatToken.sol#L132-L139) and [`setMaxTotalTax(uint256 amount)`](contracts/GibsMeDatToken.sol#L150-L162) raise or lower the ceiling on transfer taxes (in basis points). Increases require a two-day delay, enabling higher fees only after notice.
+- **Tax exemptions** – [`setTaxExempt(address account, bool exempt)`](contracts/GibsMeDatToken.sol#L164-L168) can exempt addresses from taxes and transfer limits, potentially favoring certain holders.
+- **Max transfer amount** – [`setMaxTransferAmount(uint256 amount)`](contracts/GibsMeDatToken.sol#L170-L174) caps how many tokens a non-exempt address may send in one transaction. Zero removes the cap and lifting it can restrict or free large movements.
+- **Treasury address** – [`setTreasury(address newTreasury)`](contracts/GibsMeDatToken.sol#L87-L94) changes where the treasury share of taxes is sent. The new address must itself be governed by a timelock.
+- **Emergency controls** – [`pause()`](contracts/GibsMeDatToken.sol#L176-L179) and [`unpause()`](contracts/GibsMeDatToken.sol#L181-L184) let the owner halt or resume all token transfers.
+- **Token rescue** – [`rescueTokens(address token, address to, uint256 amount)`](contracts/GibsMeDatToken.sol#L186-L198) allows recovery of tokens mistakenly sent to the contract, excluding GIBS earmarked for reflections.
+
 ## Front-end checks
 
 From `site/`, install dependencies and run:
