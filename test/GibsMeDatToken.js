@@ -188,6 +188,21 @@ describe('GibsMeDatToken', function () {
     expect(received2).to.equal(amount);
   });
 
+  it('enforces configurable maximum total tax rate', async function () {
+    await expect(token.setTaxRates(300, 300, 0)).to.be.revertedWith(
+      'tax too high'
+    );
+    await expect(token.setTaxRates(200, 300, 0)).to.not.be.reverted;
+    await expect(token.setMaxTotalTax(700)).to.not.be.reverted;
+    await expect(token.setTaxRates(400, 300, 0)).to.not.be.reverted;
+    await expect(token.setTaxRates(401, 300, 0)).to.be.revertedWith(
+      'tax too high'
+    );
+    await expect(token.setMaxTotalTax(10001)).to.be.revertedWith(
+      'max tax too high'
+    );
+  });
+
   it('pauses and unpauses transfers', async function () {
     await token.pause();
     await expect(token.transfer(addr1.address, 1n)).to.be.revertedWith(
