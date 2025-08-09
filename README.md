@@ -50,8 +50,14 @@ npm install
 npx hardhat compile
 ```
 
-Deploy the token (which supports `permit`) with Hardhat:
+Deploy the token (which supports `permit`) with Hardhat. Set the `TREASURY` environment variable to the treasury address that should receive taxes:
 
 ```bash
-npx hardhat run scripts/deploy.js
+TREASURY=<treasury-address> npx hardhat run scripts/deploy.js --network <network>
+```
+
+On Windows, a helper script is provided which sets `TREASURY` for you:
+
+```bat
+scripts\deploy.bat <network> <treasury-address>
 ```
