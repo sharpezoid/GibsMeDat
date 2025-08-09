@@ -174,6 +174,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
         uint256 amount = reflectionBalance[msg.sender];
         require(amount > 0, "nothing to claim");
         reflectionBalance[msg.sender] = 0;
+        require(balanceOf(address(this)) >= totalPendingReflection, "insufficient balance");
         totalPendingReflection -= amount;
         super._transfer(address(this), msg.sender, amount);
         emit ReflectionClaimed(msg.sender, amount);

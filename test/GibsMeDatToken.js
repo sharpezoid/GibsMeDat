@@ -120,6 +120,30 @@ describe('GibsMeDatToken', function () {
     expect(after).to.be.gt(before);
   });
 
+  it('reverts claiming reflections if contract balance is insufficient', async function () {
+    const amount = ethers.parseUnits('1000', 18);
+    await token.transfer(addr1.address, amount);
+    await token.transfer(addr2.address, amount);
+    await token.setTaxExempt(token.target, true);
+
+    await ethers.provider.send('hardhat_setBalance', [
+      token.target,
+      ethers.toBeHex(ethers.parseEther('1')),
+    ]);
+    await ethers.provider.send('hardhat_impersonateAccount', [token.target]);
+    const contractSigner = await ethers.getSigner(token.target);
+    await token
+      .connect(contractSigner)
+      .transfer(owner.address, ethers.parseUnits('1', 18));
+    await ethers.provider.send('hardhat_stopImpersonatingAccount', [
+      token.target,
+    ]);
+
+    await expect(token.connect(addr1).claimReflection()).to.be.revertedWith(
+      'insufficient balance'
+    );
+  });
+
   it('preserves reflection balance after burn', async function () {
     const amount = ethers.parseUnits('1000', 18);
     await token.transfer(addr1.address, amount);
