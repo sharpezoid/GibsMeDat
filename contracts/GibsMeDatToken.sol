@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 interface ITimelockController is IERC165 {
     function getMinDelay() external view returns (uint256);
@@ -29,7 +30,7 @@ interface ITimelockController is IERC165 {
 /// @title Gibs Me Dat Token
 /// @notice Satirical meme token of the people. Features a 0.69% transfer tax
 /// that redistributes wealth, funds the treasury, and sends some to the Gulag.
-contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable {
+contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     uint256 public constant INITIAL_SUPPLY = 6_942_080_085 * 10 ** 18;
     uint256 public constant TAX_DENOMINATOR = 10_000; // basis points
@@ -219,7 +220,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
 
     /// @notice Rescue tokens accidentally sent to this contract.
     /// @dev GIBS tokens reserved for reflections cannot be rescued.
-    function rescueTokens(address token, address to, uint256 amount) external onlyOwner {
+    function rescueTokens(address token, address to, uint256 amount) external onlyOwner nonReentrant {
         require(to != address(0), "to zero");
         if (token == address(this)) {
             uint256 available = balanceOf(address(this)) - totalPendingReflection;
@@ -232,7 +233,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
     }
 
     /// @notice Claim accumulated reflections.
-    function claimReflection() external {
+    function claimReflection() external nonReentrant {
         _updateReflection(msg.sender);
         uint256 amount = reflectionBalance[msg.sender];
         require(amount > 0, "nothing to claim");
