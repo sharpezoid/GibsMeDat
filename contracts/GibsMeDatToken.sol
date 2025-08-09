@@ -21,6 +21,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
     uint256 public reflectionTax = 30; // 0.3%
     uint256 public treasuryTax = 30; // 0.3%
     uint256 public burnTax = 9;      // 0.09%
+    uint256 public maxTotalTax = 500; // 5%
 
     address public treasury; // Treasury wallet controlled by comrades
     address public constant DEAD = address(0xdead);
@@ -43,6 +44,7 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
     event HoardersPunished(address bourgeoisie, uint256 penalty);
     event ReflectionClaimed(address indexed comrade, uint256 amount);
     event TaxRatesUpdated(uint256 reflection, uint256 treasury, uint256 burn);
+    event MaxTotalTaxUpdated(uint256 amount);
     event TaxExemptionUpdated(address indexed account, bool isExempt);
     event MaxTransferAmountUpdated(uint256 amount);
     event TokensRescued(address indexed token, address indexed to, uint256 amount);
@@ -80,12 +82,19 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
         uint256 _burnTax
     ) external onlyOwner {
         uint256 total = _reflectionTax + _treasuryTax + _burnTax;
-        require(total <= TAX_DENOMINATOR, "tax too high");
+        require(total <= maxTotalTax, "tax too high");
         reflectionTax = _reflectionTax;
         treasuryTax = _treasuryTax;
         burnTax = _burnTax;
         transferTax = total;
         emit TaxRatesUpdated(_reflectionTax, _treasuryTax, _burnTax);
+    }
+
+    /// @notice Set the maximum total tax rate in basis points.
+    function setMaxTotalTax(uint256 amount) external onlyOwner {
+        require(amount <= TAX_DENOMINATOR, "max tax too high");
+        maxTotalTax = amount;
+        emit MaxTotalTaxUpdated(amount);
     }
 
     /// @notice Whitelist or remove an address from tax and max transfer.
