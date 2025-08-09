@@ -13,6 +13,9 @@ jobs:
         with:
           node-version: 18
       - run: npm ci
+      - run: npm --prefix site ci
       - run: npm run lint
+      - run: npm --prefix site run lint
       - run: npm test
+      - run: npm --prefix site test
       - run: npm run format:check
