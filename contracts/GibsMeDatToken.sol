@@ -157,6 +157,26 @@ contract GibsMeDatToken is ERC20, ERC20Burnable, ERC20Permit, Ownable, Pausable 
         }
     }
 
+    function _beforeTokenTransfer(address from, address to, uint256 amount)
+        internal
+        override
+    {
+        if (to == address(0)) {
+            _updateReflection(from);
+        }
+        super._beforeTokenTransfer(from, to, amount);
+    }
+
+    function _afterTokenTransfer(address from, address to, uint256 amount)
+        internal
+        override
+    {
+        super._afterTokenTransfer(from, to, amount);
+        if (to == address(0)) {
+            _syncReflection(from);
+        }
+    }
+
     /// @dev Overrides the ERC20 _transfer to take taxes and handle reflections
     function _transfer(address sender, address recipient, uint256 amount)
         internal
